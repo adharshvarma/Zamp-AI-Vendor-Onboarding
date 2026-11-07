@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+@theme {
+  /* ClearVend Design System Color Palette */
+  --color-primary: #173B63;       /* Deep Navy Blue */
+  --color-primary-hover: #112d4e;
+  --color-secondary: #2563EB;     /* Blue */
+  --color-secondary-hover: #1d4ed8;
+  --color-bg-main: #F8FAFC;       /* Very Light Grey */
+  --color-card-bg: #FFFFFF;       /* White */
+  --color-success: #16A34A;       /* Green */
+  --color-pending: #D97706;       /* Amber */
+  --color-error: #DC2626;         /* Red */
+  --color-text-main: #1E293B;     /* Main Text */
+  --color-text-muted: #64748B;    /* Secondary Text */
+
+  /* Border radius: 10-12px */
+  --radius-card: 12px;
+  --radius-btn: 10px;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
+  -webkit-font-smoothing: antialiased;
+}
