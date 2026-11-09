@@ -5,7 +5,7 @@ import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { CheckCircle2, FileText } from 'lucide-react';
 
-export function Step3ReviewSubmit({ data, updateData, onSubmit, onBack }) {
+export function Step3ReviewSubmit({ data, updateData, onSubmit, onBack, submitting = false }) {
   const handleSubmitClick = () => {
     if (!data.panFile || !data.bankFile) {
       alert("Please ensure both PAN Document and Bank Proof are uploaded before submitting.");
@@ -25,6 +25,8 @@ export function Step3ReviewSubmit({ data, updateData, onSubmit, onBack }) {
         <div className="bg-slate-50 p-4 rounded-[10px] border border-slate-200 text-xs space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <p><strong>Legal Entity Name:</strong> {data.companyName || 'N/A'}</p>
+            <p><strong>Contact Person:</strong> {data.contactName || 'N/A'}</p>
+            <p><strong>Designation:</strong> {data.designation || 'N/A'}</p>
             <p><strong>Entity Structure:</strong> {data.entityType === 'Other' ? `Other (${data.customEntity || 'Unspecified'})` : data.entityType || 'N/A'}</p>
             <p><strong>PAN Number:</strong> {data.panNumber || 'N/A'}</p>
             <p><strong>GST Registration:</strong> {data.gstRegistered === 'Yes' ? (data.gstin || 'GSTIN Provided') : 'Non-GST Registered'}</p>
@@ -78,13 +80,13 @@ export function Step3ReviewSubmit({ data, updateData, onSubmit, onBack }) {
         </div>
 
         <div className="flex justify-between pt-4">
-          <Button variant="outline" onClick={onBack}>Back</Button>
+          <Button variant="outline" onClick={onBack} disabled={submitting}>Back</Button>
           <Button 
             variant="success" 
-            disabled={!data.declarationAccepted} 
+            disabled={!data.declarationAccepted || submitting} 
             onClick={handleSubmitClick}
           >
-            <CheckCircle2 className="w-4 h-4" /> Submit Application
+            <CheckCircle2 className="w-4 h-4" /> {submitting ? 'AI is reading your documents (about 20 sec)...' : 'Submit Application'}
           </Button>
         </div>
       </div>

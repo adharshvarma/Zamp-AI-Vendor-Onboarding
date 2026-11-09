@@ -11,64 +11,70 @@ import { RegisterPage } from './pages/RegisterPage';
 import { SignInPage } from './pages/SignInPage';
 import { VendorDashboard } from './pages/VendorDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
+import { AdminReviewPage } from './pages/AdminReviewPage';
 import { Step1CompanyDetails } from './pages/AddCompanyWizard/Step1CompanyDetails';
 import { Step2DocumentsBank } from './pages/AddCompanyWizard/Step2DocumentsBank';
 import { Step3ReviewSubmit } from './pages/AddCompanyWizard/Step3ReviewSubmit';
 import { ProfilePage } from './pages/ProfilePage';
 import { CompanyDetailsPage } from './pages/CompanyDetails';
+import { VerificationReport } from './components/VerificationReport';
+
+const EMPTY_WIZARD = {
+  companyName: '',
+  entityType: 'Private Limited Company',
+  customEntity: '',
+  contactName: '',
+  designation: '',
+  pincode: '',
+  state: '',
+  district: '',
+  postOffice: '',
+  addressBuilding: '',
+  addressStreet: '',
+  panNumber: '',
+  panFile: null,
+  gstRegistered: 'Yes',
+  gstin: '',
+  gstFile: null,
+  bankHolderName: '',
+  bankName: '',
+  accNumber: '',
+  ifscCode: '',
+  bankFile: null,
+  declarationAccepted: false,
+};
+
+const WIZARD_STEPS = ['Company & Contact', 'Documents & Bank', 'Review & Submit'];
 
 export default function App() {
   const { user, logout } = useAuth();
-  const { selectedCompany, setSelectedCompany, fetchCompanies } = useCompany();
+  const { selectedCompany, setSelectedCompany } = useCompany();
 
   const [currentRoute, setCurrentRoute] = useState('dashboard');
   const [wizardStep, setWizardStep] = useState(1);
-  const [verificationLogs, setVerificationLogs] = useState([]);
-  const [adminRemark, setAdminRemark] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
-
-  // Wizard State
-  const [wizardData, setWizardData] = useState({
-    companyName: '',
-    entityType: 'Private Limited Company',
-    customEntity: '',
-    pincode: '',
-    state: '',
-    district: '',
-    postOffice: '',
-    addressBuilding: '',
-    addressStreet: '',
-    panNumber: '',
-    panFile: null,
-    gstRegistered: 'Yes',
-    gstin: '',
-    gstFile: null,
-    bankHolderName: '',
-    bankName: '',
-    accNumber: '',
-    ifscCode: '',
-    bankFile: null,
-    declarationAccepted: false,
-  });
+  const [submitting, setSubmitting] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+  const [wizardData, setWizardData] = useState(EMPTY_WIZARD);
 
   const updateWizardData = (fields) => setWizardData((prev) => ({ ...prev, ...fields }));
 
   const handleSignInSuccess = () => {
     const role = localStorage.getItem('user_role');
-    if (role === 'admin') {
-      setCurrentRoute('admin-dashboard');
-    } else {
-      setCurrentRoute('dashboard');
-      fetchCompanies?.();
-    }
+    setCurrentRoute(role === 'admin' ? 'admin-dashboard' : 'dashboard');
   };
 
   const handleRegisterSuccess = () => {
     setCurrentRoute('dashboard');
-    fetchCompanies?.();
+  };
+
+  const startNewApplication = () => {
+    setWizardData({ ...EMPTY_WIZARD, contactName: user?.name || '' });
+    setWizardStep(1);
+    setCurrentRoute('company-wizard');
   };
 
   const handleWizardSubmit = async () => {
+    setSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('company_name', wizardData.companyName);
@@ -81,6 +87,8 @@ export default function App() {
       if (wizardData.postOffice) formData.append('post_office', wizardData.postOffice);
       if (wizardData.addressBuilding) formData.append('address_building', wizardData.addressBuilding);
       if (wizardData.addressStreet) formData.append('address_street', wizardData.addressStreet);
+      if (wizardData.contactName) formData.append('contact_name', wizardData.contactName);
+      if (wizardData.designation) formData.append('designation', wizardData.designation);
       formData.append('pan_number', wizardData.panNumber);
       formData.append('gst_registered', wizardData.gstRegistered);
       if (wizardData.gstin) formData.append('gstin', wizardData.gstin);
@@ -90,34 +98,18 @@ export default function App() {
       formData.append('ifsc_code', wizardData.ifscCode);
 
       if (wizardData.panFile) formData.append('pan_file', wizardData.panFile);
-      if (wizardData.gstFile) formData.append('gst_file', wizardData.gstFile);
+      if (wizardData.gstRegistered === 'Yes' && wizardData.gstFile) formData.append('gst_file', wizardData.gstFile);
       if (wizardData.bankFile) formData.append('bank_file', wizardData.bankFile);
 
       const response = await API.post('/api/vendor/apply', formData);
-      setVerificationLogs(response.data.ai_evaluations || response.data.results || []);
+      setLastResult(response.data);
       setCurrentRoute('ai-verification');
     } catch (err) {
-      console.error("Vendor application submission failed:", err);
-      alert(err.response?.data?.detail || "Submission failed. Please check your inputs.");
-    }
-  };
-
-  const handleAdminReviewAction = async (statusValue) => {
-    if (!selectedCompany) return;
-    setActionLoading(true);
-    try {
-      await API.post(`/api/admin/applications/${selectedCompany.id}/review`, {
-        status: statusValue,
-        remark: adminRemark
-      });
-      alert(`Application successfully marked as ${statusValue}`);
-      setAdminRemark('');
-      setCurrentRoute('admin-dashboard');
-    } catch (err) {
-      console.error("Failed to update status:", err);
-      alert("Failed to update application status.");
+      console.error('Vendor application submission failed:', err);
+      const detail = err.response?.data?.detail;
+      alert(typeof detail === 'string' ? detail : 'Submission failed. Please check that all required fields are filled.');
     } finally {
-      setActionLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -132,152 +124,124 @@ export default function App() {
     return <LandingPage onNavigate={setCurrentRoute} />;
   }
 
-  // Authenticated Portal Layout
   return (
-    <DashboardLayout 
-      currentUser={user} 
-      role={localStorage.getItem('user_role')} 
+    <DashboardLayout
+      currentUser={user}
+      role={localStorage.getItem('user_role')}
       onLogout={() => { logout(); setCurrentRoute('landing'); }}
       activeNav={currentRoute}
       setActiveNav={setCurrentRoute}
     >
       {/* Vendor Dashboard */}
       {currentRoute === 'dashboard' && (
-        <VendorDashboard 
-          onAddCompany={() => { setWizardStep(1); setCurrentRoute('company-wizard'); }} 
-          onViewCompany={(comp) => { 
-            setSelectedCompany(comp); 
-            setCurrentRoute('company-details'); 
-          }} 
+        <VendorDashboard
+          onAddCompany={startNewApplication}
+          onViewCompany={(comp) => {
+            setSelectedCompany(comp);
+            setCurrentRoute('company-details');
+          }}
         />
       )}
 
       {/* Multi-step Registration Wizard */}
       {currentRoute === 'company-wizard' && (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-3xl mx-auto space-y-5">
+          {/* Progress stepper */}
+          <div className="flex items-center gap-2">
+            {WIZARD_STEPS.map((label, idx) => {
+              const n = idx + 1;
+              const done = wizardStep > n;
+              const active = wizardStep === n;
+              return (
+                <React.Fragment key={label}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                      done ? 'bg-[#16A34A] text-white' : active ? 'bg-[#173B63] text-white' : 'bg-slate-200 text-slate-500'
+                    }`}>
+                      {done ? '✓' : n}
+                    </span>
+                    <span className={`text-xs font-semibold hidden sm:inline ${active ? 'text-[#173B63]' : 'text-slate-500'}`}>{label}</span>
+                  </div>
+                  {n < WIZARD_STEPS.length && <div className="flex-1 h-px bg-slate-200" />}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
           {wizardStep === 1 && (
-            <Step1CompanyDetails 
-              data={wizardData} 
-              updateData={updateWizardData} 
-              onNext={() => setWizardStep(2)} 
-              onCancel={() => setCurrentRoute('dashboard')} 
+            <Step1CompanyDetails
+              data={wizardData}
+              updateData={updateWizardData}
+              onNext={() => setWizardStep(2)}
+              onCancel={() => setCurrentRoute('dashboard')}
             />
           )}
           {wizardStep === 2 && (
-            <Step2DocumentsBank 
-              data={wizardData} 
-              updateData={updateWizardData} 
-              onNext={() => setWizardStep(3)} 
-              onBack={() => setWizardStep(1)} 
+            <Step2DocumentsBank
+              data={wizardData}
+              updateData={updateWizardData}
+              onNext={() => setWizardStep(3)}
+              onBack={() => setWizardStep(1)}
             />
           )}
           {wizardStep === 3 && (
-            <Step3ReviewSubmit 
-              data={wizardData} 
-              updateData={updateWizardData} 
-              onSubmit={handleWizardSubmit} 
-              onBack={() => setWizardStep(2)} 
+            <Step3ReviewSubmit
+              data={wizardData}
+              updateData={updateWizardData}
+              onSubmit={handleWizardSubmit}
+              onBack={() => setWizardStep(2)}
+              submitting={submitting}
             />
           )}
         </div>
       )}
 
-      {/* AI Verification Stage Screen */}
-      {currentRoute === 'ai-verification' && (
-        <div className="max-w-3xl mx-auto bg-white p-8 rounded-[12px] border border-slate-200 shadow-sm text-center">
-          <h2 className="text-2xl font-bold text-[#173B63] mb-2">AI Document Compliance Processing</h2>
-          <p className="text-xs text-[#64748B] mb-6">Groq AI OCR & Cross-Field Consistency Evaluation Results</p>
-          <div className="text-left space-y-3 mb-6">
-            {verificationLogs.map((log, idx) => (
-              <div key={idx} className="p-4 bg-slate-50 rounded-[10px] border border-slate-200 text-xs space-y-1">
-                <div className="flex justify-between font-semibold">
-                  <span className="text-[#173B63]">{log.document}</span>
-                  <span className={log.result === 'Pass' ? 'text-emerald-600' : 'text-amber-600'}>
-                    {log.result}
-                  </span>
-                </div>
-                <p className="text-slate-600"><strong>Extracted:</strong> {log.extracted}</p>
-                <p className="text-slate-500"><strong>Remarks:</strong> {log.remarks}</p>
-              </div>
-            ))}
+      {/* Result screen right after submitting */}
+      {currentRoute === 'ai-verification' && lastResult && (
+        <div className="max-w-4xl mx-auto space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-bold text-[#173B63]">Verification Result</h2>
+              <p className="text-xs text-[#64748B]">
+                Application {lastResult.application_id} · Vendor ID {lastResult.vendor_id}
+              </p>
+            </div>
+            <button
+              onClick={() => setCurrentRoute('dashboard')}
+              className="bg-[#173B63] text-white px-5 py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#112d4e]"
+            >
+              Back to Dashboard
+            </button>
           </div>
-          <button 
-            onClick={() => { setCurrentRoute('dashboard'); }} 
-            className="bg-[#173B63] text-white px-6 py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#112d4e]"
-          >
-            Return to Dashboard
-          </button>
+          <VerificationReport report={lastResult.report} status={lastResult.status} />
+          <p className="text-xs text-slate-500">
+            You can see this result anytime from your dashboard → View Details. If something needs fixing, use "Fix &amp; Resubmit" there.
+            Final approval is confirmed by the procurement team.
+          </p>
         </div>
       )}
 
-      {/* Admin Applications Console */}
+      {/* Admin dashboard */}
       {currentRoute === 'admin-dashboard' && (
-        <AdminDashboard 
-          onReviewApplication={(comp) => { setSelectedCompany(comp); setCurrentRoute('admin-review'); }} 
+        <AdminDashboard
+          onReviewApplication={(comp) => { setSelectedCompany(comp); setCurrentRoute('admin-review'); }}
         />
       )}
 
-      {/* Admin Application Review Screen */}
+      {/* Admin review of one application */}
       {currentRoute === 'admin-review' && selectedCompany && (
-        <div className="max-w-4xl mx-auto bg-white p-8 rounded-[12px] border border-slate-200 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-[#173B63]">{selectedCompany.companyName || selectedCompany.company_name}</h2>
-            <button onClick={() => setCurrentRoute('admin-dashboard')} className="text-xs text-[#2563EB] hover:underline">
-              &larr; Back to Queue
-            </button>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 p-4 rounded-[10px]">
-            <div><strong>Entity Type:</strong> {selectedCompany.entityType || selectedCompany.entity_type}</div>
-            <div><strong>Vendor ID:</strong> {selectedCompany.vendorId || selectedCompany.vendor_id}</div>
-            <div><strong>App ID:</strong> {selectedCompany.applicationId || selectedCompany.application_id}</div>
-            <div><strong>Status:</strong> {selectedCompany.status}</div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-[#1E293B] mb-1">Decision Remark</label>
-            <textarea 
-              value={adminRemark} 
-              onChange={(e) => setAdminRemark(e.target.value)} 
-              className="w-full border border-slate-300 rounded-[10px] p-3 text-xs mb-4 focus:outline-none focus:border-[#2563EB]"
-              rows={3} 
-              placeholder="Enter review remarks or reason for decision..."
-            />
-            <div className="flex gap-3">
-              <button 
-                onClick={() => handleAdminReviewAction('Approved')} 
-                disabled={actionLoading}
-                className="bg-[#16A34A] text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-[#15803d]"
-              >
-                Approve
-              </button>
-              <button 
-                onClick={() => handleAdminReviewAction('Clarification_Required')} 
-                disabled={actionLoading}
-                className="bg-[#D97706] text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-[#b45309]"
-              >
-                Clarification Required
-              </button>
-              <button 
-                onClick={() => handleAdminReviewAction('Rejected')} 
-                disabled={actionLoading}
-                className="bg-[#DC2626] text-white px-4 py-2 rounded-[10px] text-xs font-medium hover:bg-[#b91c1c]"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
+        <AdminReviewPage
+          companyId={selectedCompany.id}
+          onBack={() => setCurrentRoute('admin-dashboard')}
+        />
       )}
 
-      {/* User Profile Page */}
-      {currentRoute === 'profile' && (
-        <ProfilePage />
-      )}
+      {currentRoute === 'profile' && <ProfilePage />}
 
-      {/* Company Details View */}
       {currentRoute === 'company-details' && (
         <CompanyDetailsPage
-          company={selectedCompany} 
-          onBack={() => setCurrentRoute('dashboard')} 
+          company={selectedCompany}
+          onBack={() => setCurrentRoute('dashboard')}
         />
       )}
     </DashboardLayout>

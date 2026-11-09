@@ -8,9 +8,17 @@ import { Upload, FileText, CheckCircle2 } from 'lucide-react';
 
 export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
   const handleFileChange = (field, file) => {
-    if (file) {
-      updateData({ [field]: file });
+    if (!file) return;
+    const okType = /\.(png|jpe?g|webp)$/i.test(file.name);
+    if (!okType) {
+      alert('Please upload an image (JPG or PNG). Take a clear photo or screenshot of the document.');
+      return;
     }
+    if (file.size > 4 * 1024 * 1024) {
+      alert('This image is larger than 4 MB. Please upload a smaller image.');
+      return;
+    }
+    updateData({ [field]: file });
   };
 
   const handleNext = () => {
@@ -40,12 +48,12 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
             />
             <div>
               <label className="block text-xs font-semibold text-[#1E293B] mb-1">
-                Upload PAN Card Document (PDF, JPG, PNG) <span className="text-[#DC2626]">*</span>
+                Upload PAN Card (JPG / PNG, max 4 MB) <span className="text-[#DC2626]">*</span>
               </label>
               <div className="border border-dashed border-slate-300 rounded-[10px] p-3 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors">
                 <input 
                   type="file" 
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept=".jpg,.jpeg,.png,.webp"
                   onChange={(e) => handleFileChange('panFile', e.target.files[0])}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                 />
@@ -104,7 +112,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                 <div className="border border-dashed border-slate-300 rounded-[10px] p-3 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors">
                   <input 
                     type="file" 
-                    accept=".pdf,.jpg,.jpeg,.png"
+                    accept=".jpg,.jpeg,.png,.webp"
                     onChange={(e) => handleFileChange('gstFile', e.target.files[0])}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                   />
@@ -165,7 +173,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
             <div className="border border-dashed border-slate-300 rounded-[10px] p-3 text-center bg-slate-50 relative hover:bg-slate-100 transition-colors">
               <input 
                 type="file" 
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept=".jpg,.jpeg,.png,.webp"
                 onChange={(e) => handleFileChange('bankFile', e.target.files[0])}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
               />

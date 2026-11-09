@@ -3,173 +3,181 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { StatusBadge } from '../components/StatusBadge';
+import { StatusBadge, normalizeStatus } from '../components/StatusBadge';
+import { VerificationReport } from '../components/VerificationReport';
+import { ArrowLeft, CheckCircle2, Clock, XCircle } from 'lucide-react';
 import API from '../services/api';
-import { CheckCircle, XCircle, AlertCircle, FileText, ArrowLeft } from 'lucide-react';
 
-export function AdminReviewPage() {
-  const [applications, setApplications] = useState([]);
-  const [selectedApp, setSelectedApp] = useState(null);
+function Row({ label, value, mono = false }) {
+  return (
+    <div className="flex justify-between gap-4 border-b border-slate-100 pb-2 last:border-0">
+      <span className="text-slate-500 font-medium">{label}</span>
+      <span className={`font-semibold text-[#173B63] text-right ${mono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
+    </div>
+  );
+}
+
+export function AdminReviewPage({ companyId, onBack }) {
+  const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [remark, setRemark] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
-  const fetchApplications = async () => {
+  const fetchDetail = async () => {
+    setLoading(true);
     try {
-      const response = await API.get('/api/admin/applications');
-      setApplications(response.data);
+      const response = await API.get(`/api/admin/applications/${companyId}`);
+      setApp(response.data);
     } catch (err) {
-      console.error("Failed to load admin applications:", err);
+      console.error('Failed to load application:', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, []);
+    fetchDetail();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId]);
 
-  const handleReviewAction = async (newStatus) => {
-    if (!selectedApp) return;
+  const decide = async (newStatus) => {
+    const aiDecision = app?.ai_report?.decision;
+    if (aiDecision && newStatus !== aiDecision && !remark.trim()) {
+      alert(`The AI recommended "${aiDecision}". Please write a remark explaining why you are choosing "${newStatus}".`);
+      return;
+    }
     setActionLoading(true);
+    setMessage('');
     try {
-      await API.post(`/api/admin/applications/${selectedApp.id}/review`, {
-        status: newStatus,
-        remark: remark
-      });
-      alert(`Application status successfully updated to ${newStatus}`);
-      setSelectedApp(null);
+      await API.post(`/api/admin/applications/${companyId}/review`, { status: newStatus, remark });
+      setMessage(`Final decision saved: ${newStatus}`);
       setRemark('');
-      fetchApplications();
+      await fetchDetail();
     } catch (err) {
-      console.error("Failed to update application status:", err);
-      alert("Error updating status. Please try again.");
+      const d = err.response?.data?.detail;
+      alert(typeof d === 'string' ? d : 'Failed to update application status.');
     } finally {
       setActionLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-xs text-slate-500">Loading admin applications queue...</div>;
+    return <div className="p-8 text-center text-xs text-slate-500">Loading application...</div>;
   }
-
-  // Detail Inspector View
-  if (selectedApp) {
+  if (!app) {
     return (
-      <div className="max-w-4xl mx-auto space-y-6">
-        <Button variant="outline" onClick={() => setSelectedApp(null)}>
-          <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Queue
-        </Button>
-
-        <Card title={`Review Application: ${selectedApp.companyName}`}>
-          <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-[10px] border border-slate-200">
-              <p><strong>App ID:</strong> {selectedApp.applicationId}</p>
-              <p><strong>Vendor ID:</strong> {selectedApp.vendorId}</p>
-              <p><strong>Entity Type:</strong> {selectedApp.entityType}</p>
-              <p><strong>Current Status:</strong> <StatusBadge status={selectedApp.status} /></p>
-            </div>
-
-            <div className="space-y-2">
-              <p className="font-semibold text-slate-700">Uploaded Compliance Files:</p>
-              <div className="space-y-2">
-                {selectedApp.documents?.map((doc, idx) => (
-                  <div key={idx} className="p-3 bg-white border border-slate-200 rounded-[10px] flex items-center justify-between">
-                    <span className="flex items-center gap-2 font-medium text-[#173B63]">
-                      <FileText className="w-4 h-4 text-[#2563EB]" /> {doc.doc_type}
-                    </span>
-                    <a href={`http://localhost:8000/${doc.file_url}`} target="_blank" rel="noreferrer" className="text-[#2563EB] hover:underline font-medium">
-                      View File
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <label className="font-semibold text-slate-700 block">Admin Review Remark:</label>
-              <textarea 
-                value={remark}
-                onChange={(e) => setRemark(e.target.value)}
-                placeholder="Enter remarks or reason for approval/rejection/clarification..."
-                className="w-full p-3 border border-slate-200 rounded-[10px] focus:outline-none focus:border-[#2563EB] text-xs"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-              <Button 
-                variant="outline" 
-                onClick={() => handleReviewAction('Clarification_Required')}
-                disabled={actionLoading}
-              >
-                <AlertCircle className="w-4 h-4 mr-1 text-amber-600" /> Request Clarification
-              </Button>
-              <Button 
-                variant="danger" 
-                onClick={() => handleReviewAction('Rejected')}
-                disabled={actionLoading}
-              >
-                <XCircle className="w-4 h-4 mr-1" /> Reject
-              </Button>
-              <Button 
-                variant="success" 
-                onClick={() => handleReviewAction('Approved')}
-                disabled={actionLoading}
-              >
-                <CheckCircle className="w-4 h-4 mr-1" /> Approve
-              </Button>
-            </div>
-          </div>
-        </Card>
+      <div className="max-w-4xl mx-auto space-y-4">
+        <Button variant="outline" onClick={onBack}><ArrowLeft className="w-4 h-4" /> Back</Button>
+        <p className="text-sm text-red-600">Could not load this application.</p>
       </div>
     );
   }
 
-  // Main Queue Table View
+  const aiDecision = app.ai_report?.decision;
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#173B63]">Admin Application Review</h1>
-        <p className="text-xs text-[#64748B]">Manage all submitted vendor companies, inspect documents, and take action.</p>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <Button variant="outline" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
+        </Button>
+        <StatusBadge status={app.status} size="lg" />
       </div>
 
-      <Card title="All Vendor Submissions">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider">
-              <tr>
-                <th className="py-3 px-4">Company Name</th>
-                <th className="py-3 px-4">Vendor ID</th>
-                <th className="py-3 px-4">Entity Type</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {applications.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="py-6 text-center text-slate-400">No applications found.</td>
-                </tr>
-              ) : (
-                applications.map((app) => (
-                  <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-4 font-semibold text-[#173B63]">{app.companyName}</td>
-                    <td className="py-4 px-4 font-mono text-slate-600">{app.vendorId}</td>
-                    <td className="py-4 px-4 text-slate-600">{app.entityType}</td>
-                    <td className="py-4 px-4"><StatusBadge status={app.status} /></td>
-                    <td className="py-4 px-4 text-right">
-                      <Button variant="outline" onClick={() => setSelectedApp(app)}>
-                        Review Application
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <div>
+        <h1 className="text-2xl font-bold text-[#173B63]">{app.company_name}</h1>
+        <p className="text-xs text-slate-500">
+          {app.application_id} · {app.vendor_id} · {app.entity_type} · Submitted {app.submitted_at ? new Date(app.submitted_at).toLocaleString() : 'N/A'}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: AI report */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card title="AI Verification Report">
+            <VerificationReport report={app.ai_report} status={app.status} showVendorMessage />
+          </Card>
         </div>
-      </Card>
+
+        {/* Right: decision + submitted data */}
+        <div className="space-y-6">
+          <Card title="Final Decision">
+            <div className="space-y-3">
+              {aiDecision && (
+                <p className="text-xs text-slate-600">
+                  AI recommendation: <strong>{aiDecision}</strong>. Agree with one click, or override with a remark.
+                </p>
+              )}
+              <textarea
+                value={remark}
+                onChange={(e) => setRemark(e.target.value)}
+                className="w-full border border-slate-300 rounded-[10px] p-3 text-xs focus:outline-none focus:border-[#2563EB]"
+                rows={3}
+                placeholder="Remark (required if you differ from the AI)..."
+              />
+              <div className="grid grid-cols-1 gap-2">
+                <Button variant="success" onClick={() => decide('Approved')} disabled={actionLoading}>
+                  <CheckCircle2 className="w-4 h-4" /> Approve
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => decide('Pending')}
+                  disabled={actionLoading}
+                  className="py-2.5 px-4 rounded-[10px] font-medium text-sm bg-[#D97706] text-white hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Clock className="w-4 h-4" /> Keep Pending (ask vendor)
+                </button>
+                <Button variant="danger" onClick={() => decide('Rejected')} disabled={actionLoading}>
+                  <XCircle className="w-4 h-4" /> Reject
+                </Button>
+              </div>
+              {message && <p className="text-xs font-semibold text-[#15803D]">{message}</p>}
+              <p className="text-[11px] text-slate-500">Current status: {normalizeStatus(app.status)}. Every decision is logged in the audit trail.</p>
+            </div>
+          </Card>
+
+          <Card title="Submitted by">
+            <div className="space-y-2 text-xs">
+              <Row label="Name" value={app.contact_name} />
+              <Row label="Designation" value={app.designation} />
+              <Row label="Email" value={app.ai_report?.contact?.email} />
+              <Row label="Mobile" value={app.ai_report?.contact?.mobile} />
+            </div>
+          </Card>
+
+          <Card title="Form details">
+            <div className="space-y-2 text-xs">
+              <Row label="PAN" value={app.pan_number} mono />
+              <Row label="GST Registered" value={app.gst_registered} />
+              <Row label="GSTIN" value={app.gstin} mono />
+              <Row label="Account Holder" value={app.bank_holder_name} />
+              <Row label="Bank" value={app.bank_name} />
+              <Row label="Account No." value={app.acc_number} mono />
+              <Row label="IFSC" value={app.ifsc_code} mono />
+              <Row label="State" value={app.state} />
+              <Row label="PIN" value={app.pincode} />
+            </div>
+          </Card>
+
+          {Array.isArray(app.activity) && app.activity.length > 0 && (
+            <Card title="Audit Trail">
+              <ol className="space-y-3 text-xs">
+                {app.activity.map((a, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#2563EB] shrink-0" />
+                    <div>
+                      <p className="font-semibold text-[#1E293B]">{a.action}</p>
+                      {a.remark && <p className="text-slate-600">{a.remark}</p>}
+                      <p className="text-slate-400">{a.by} · {a.at ? new Date(a.at).toLocaleString() : ''}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
-import { StatusBadge } from '../components/StatusBadge';
+import { StatusBadge, normalizeStatus } from '../components/StatusBadge';
 import { ChevronRight, Plus, RefreshCw } from 'lucide-react';
 import API from '../services/api';
 
@@ -36,9 +36,10 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
   }, []);
 
   const total = companies.length;
-  const approved = companies.filter(c => c.status === 'Approved').length;
-  const pending = companies.filter(c => c.status === 'Pending' || c.status === 'Flagged').length;
-  const rejected = companies.filter(c => c.status === 'Rejected').length;
+  const approved = companies.filter(c => normalizeStatus(c.status) === 'Approved').length;
+  const pending = companies.filter(c => normalizeStatus(c.status) === 'Pending').length;
+  const rejected = companies.filter(c => normalizeStatus(c.status) === 'Rejected').length;
+  const needAction = companies.filter(c => normalizeStatus(c.status) !== 'Approved' && (c.actions_needed || 0) > 0);
 
   return (
     <div className="space-y-6">
@@ -70,7 +71,7 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
           <p className="text-3xl font-extrabold text-[#16A34A] mt-2">{approved}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-[11px] font-bold text-[#64748B] uppercase">Pending / Flagged</p>
+          <p className="text-[11px] font-bold text-[#64748B] uppercase">Pending</p>
           <p className="text-3xl font-extrabold text-[#D97706] mt-2">{pending}</p>
         </Card>
         <Card className="p-5">
@@ -78,6 +79,13 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
           <p className="text-3xl font-extrabold text-[#DC2626] mt-2">{rejected}</p>
         </Card>
       </div>
+
+      {/* Action needed banner */}
+      {!loading && needAction.length > 0 && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-[12px] text-sm text-[#92400E]">
+          <strong>{needAction.length} application(s) need your action.</strong> Open "View Details" to see exactly what to fix, then use "Fix &amp; Resubmit".
+        </div>
+      )}
 
       {/* Company List Table */}
       <Card title="Registered Entities" className="p-0 overflow-hidden">
@@ -88,7 +96,7 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
                 <th className="py-3 px-6">Company Name</th>
                 <th className="py-3 px-6">Vendor ID</th>
                 <th className="py-3 px-6">App ID</th>
-                <th className="py-3 px-6">Entity Type</th>
+                <th className="py-3 px-6">Latest Update</th>
                 <th className="py-3 px-6">Reg Date</th>
                 <th className="py-3 px-6">Status</th>
                 <th className="py-3 px-6 text-right">Action</th>
@@ -113,7 +121,7 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
                     <td className="py-4 px-6 font-semibold text-[#173B63]">{company.company_name}</td>
                     <td className="py-4 px-6 text-[#64748B] font-mono text-xs">{company.vendor_id}</td>
                     <td className="py-4 px-6 text-[#64748B] font-mono text-xs">{company.application_id}</td>
-                    <td className="py-4 px-6 text-[#64748B]">{company.entity_type}</td>
+                    <td className="py-4 px-6 text-[#64748B] text-xs max-w-xs">{company.headline || company.entity_type}</td>
                     <td className="py-4 px-6 text-[#64748B]">
                       {company.submitted_at ? new Date(company.submitted_at).toLocaleDateString() : 'N/A'}
                     </td>

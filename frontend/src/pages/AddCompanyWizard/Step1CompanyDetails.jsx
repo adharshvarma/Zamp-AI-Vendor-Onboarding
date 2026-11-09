@@ -1,8 +1,10 @@
+// File path: frontend/src/pages/AddCompanyWizard/Step1CompanyDetails.jsx
+
 import React, { useState } from 'react';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
-import { MapPin } from 'lucide-react';
+import { MapPin, UserCheck } from 'lucide-react';
 import { lookupPincode } from '../../services/pincodeService';
 
 export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
@@ -30,8 +32,23 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
     }
   };
 
+  const handleNext = () => {
+    const missing = [];
+    if (!data.companyName?.trim()) missing.push('Legal Company Name');
+    if (data.entityType === 'Other' && !data.customEntity?.trim()) missing.push('Custom Entity Type');
+    if (!data.contactName?.trim()) missing.push('Contact Person Name');
+    if (!data.designation) missing.push('Designation');
+    if (!data.pincode || data.pincode.length !== 6) missing.push('6-digit PIN Code');
+    if (!data.state) missing.push('State (enter a valid PIN code to auto-fill)');
+    if (missing.length > 0) {
+      alert('Please fill: ' + missing.join(', '));
+      return;
+    }
+    onNext();
+  };
+
   return (
-    <Card title="Step 1: Entity & Registered Address">
+    <Card title="Step 1: Company, Contact Person & Address">
       <div className="space-y-4">
         <Input 
           label="Legal Company Name" 
@@ -80,6 +97,44 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
             <p className="text-[11px] text-[#64748B]">Please provide the official legal classification recognized under Indian law.</p>
           </div>
         )}
+
+        <hr className="border-slate-100 my-2" />
+
+        <div className="flex items-center gap-1.5 text-sm font-bold text-[#173B63]">
+          <UserCheck className="w-4 h-4 text-[#2563EB]" /> Authorised Contact Person (filling this form)
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input 
+            label="Full Name" 
+            required 
+            value={data.contactName || ''} 
+            onChange={(e) => updateData({ contactName: e.target.value })} 
+            placeholder="e.g. Priya Sharma" 
+          />
+          <div>
+            <label className="block text-xs font-semibold text-[#1E293B] mb-1">
+              Designation in the Company <span className="text-[#DC2626]">*</span>
+            </label>
+            <select 
+              value={data.designation || ''} 
+              onChange={(e) => updateData({ designation: e.target.value })} 
+              className="w-full border border-slate-300 rounded-[10px] p-2.5 text-sm bg-white text-[#1E293B] focus:outline-none focus:border-[#2563EB]"
+            >
+              <option value="">Select designation</option>
+              <option>Proprietor / Owner</option>
+              <option>Partner</option>
+              <option>Director</option>
+              <option>CEO / Managing Director</option>
+              <option>CFO / Finance Head</option>
+              <option>Finance / Accounts Manager</option>
+              <option>Company Secretary</option>
+              <option>Authorised Signatory</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <p className="text-[11px] text-[#64748B] -mt-2">This person will receive all verification updates and is accountable for the information submitted.</p>
 
         <hr className="border-slate-100 my-2" />
 
@@ -145,7 +200,7 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
 
         <div className="flex justify-between pt-4">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button variant="primary" onClick={onNext}>Continue to Documents</Button>
+          <Button variant="primary" onClick={handleNext}>Continue to Documents</Button>
         </div>
       </div>
     </Card>

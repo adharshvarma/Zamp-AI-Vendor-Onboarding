@@ -1,18 +1,29 @@
+// File path: frontend/src/components/StatusBadge.jsx
+
 import React from 'react';
+import { CheckCircle2, Clock, XCircle } from 'lucide-react';
 
-export function StatusBadge({ status }) {
-  const statusStyles = {
-    Approved: 'bg-emerald-50 text-[#16A34A] border border-emerald-200',
-    Pending: 'bg-amber-50 text-[#D97706] border border-amber-200',
-    Rejected: 'bg-red-50 text-[#DC2626] border border-red-200',
-    In_Progress: 'bg-blue-50 text-[#2563EB] border border-blue-200'
+// Only 3 statuses exist. Old values (Flagged / Clarification_Required) are shown as Pending.
+export function normalizeStatus(status) {
+  if (status === 'Approved' || status === 'Rejected') return status;
+  return 'Pending';
+}
+
+export function StatusBadge({ status, size = 'sm' }) {
+  const s = normalizeStatus(status);
+  const styles = {
+    Approved: 'bg-emerald-50 text-[#15803D] border border-emerald-200',
+    Pending: 'bg-amber-50 text-[#B45309] border border-amber-200',
+    Rejected: 'bg-red-50 text-[#B91C1C] border border-red-200',
   };
-
-  const formattedStatus = status === 'In Progress' ? 'In_Progress' : status;
+  const icons = { Approved: CheckCircle2, Pending: Clock, Rejected: XCircle };
+  const Icon = icons[s];
+  const sizing = size === 'lg' ? 'px-3.5 py-1.5 text-sm' : 'px-2.5 py-1 text-xs';
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyles[formattedStatus] || 'bg-slate-100 text-slate-700'}`}>
-      {status}
+    <span className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${sizing} ${styles[s]}`}>
+      <Icon className={size === 'lg' ? 'w-4 h-4' : 'w-3.5 h-3.5'} />
+      {s}
     </span>
   );
 }
