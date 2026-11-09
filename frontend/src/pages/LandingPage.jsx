@@ -1,3 +1,5 @@
+// File path: frontend/src/pages/LandingPage.jsx
+
 import React from 'react';
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '../components/Button';
@@ -41,7 +43,8 @@ export function LandingPage({ onNavigate }) {
           <Button variant="secondary" fullWidth onClick={() => onNavigate('signin')}>
             Vendor Sign In
           </Button>
-          <Button variant="outline" fullWidth onClick={() => onNavigate('admin-login')}>
+          {/* Changed 'admin-login' to 'signin' since admins use the same sign-in route with admin credentials */}
+          <Button variant="outline" fullWidth onClick={() => onNavigate('signin')}>
             Admin Login
           </Button>
         </div>

@@ -5,14 +5,11 @@ import { Building2, FileText, LayoutDashboard, ShieldCheck, User } from 'lucide-
 export function DashboardLayout({ children, currentUser, onLogout, activeNav, setActiveNav, role = 'vendor' }) {
   const vendorNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'companies', label: 'My Companies', icon: Building2 },
-    { id: 'applications', label: 'Applications', icon: FileText },
     { id: 'profile', label: 'My Profile', icon: User },
   ];
 
   const adminNavItems = [
     { id: 'admin-dashboard', label: 'Summary & Queue', icon: LayoutDashboard },
-    { id: 'admin-reviews', label: 'Pending Reviews', icon: ShieldCheck },
   ];
 
   const navItems = role === 'admin' ? adminNavItems : vendorNavItems;

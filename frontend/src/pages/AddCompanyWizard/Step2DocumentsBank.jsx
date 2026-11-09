@@ -1,3 +1,5 @@
+// File path: frontend/src/pages/AddCompanyWizard/Step2DocumentsBank.jsx
+
 import React from 'react';
 import { Input } from '../../components/Input';
 import { Button } from '../../components/Button';
@@ -9,6 +11,15 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
     if (file) {
       updateData({ [field]: file });
     }
+  };
+
+  const handleNext = () => {
+    // Validate required fields before proceeding to review
+    if (!data.panNumber || !data.bankHolderName || !data.bankName || !data.accNumber || !data.ifscCode) {
+      alert("Please fill in all required text fields before proceeding.");
+      return;
+    }
+    onNext();
   };
 
   return (
@@ -35,12 +46,12 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                 <input 
                   type="file" 
                   accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => handleFileChange('panDoc', e.target.files[0])}
+                  onChange={(e) => handleFileChange('panFile', e.target.files[0])}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                 />
                 <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
                   <Upload className="w-4 h-4 text-[#2563EB]" />
-                  <span>{data.panDoc ? data.panDoc.name : "Choose file or drag & drop"}</span>
+                  <span>{data.panFile ? data.panFile.name : "Choose file or drag & drop"}</span>
                 </div>
               </div>
             </div>
@@ -94,12 +105,12 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                   <input 
                     type="file" 
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => handleFileChange('gstDoc', e.target.files[0])}
+                    onChange={(e) => handleFileChange('gstFile', e.target.files[0])}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                   />
                   <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
                     <Upload className="w-4 h-4 text-[#2563EB]" />
-                    <span>{data.gstDoc ? data.gstDoc.name : "Choose GST certificate"}</span>
+                    <span>{data.gstFile ? data.gstFile.name : "Choose GST certificate"}</span>
                   </div>
                 </div>
               </div>
@@ -155,12 +166,12 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
               <input 
                 type="file" 
                 accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => handleFileChange('bankProof', e.target.files[0])}
+                onChange={(e) => handleFileChange('bankFile', e.target.files[0])}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
               />
               <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
                 <Upload className="w-4 h-4 text-[#2563EB]" />
-                <span>{data.bankProof ? data.bankProof.name : "Choose bank proof document"}</span>
+                <span>{data.bankFile ? data.bankFile.name : "Choose bank proof document"}</span>
               </div>
             </div>
           </div>
@@ -168,7 +179,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
 
         <div className="flex justify-between pt-4">
           <Button variant="outline" onClick={onBack}>Back</Button>
-          <Button variant="primary" onClick={onNext}>Review & Submit</Button>
+          <Button variant="primary" onClick={handleNext}>Review & Submit</Button>
         </div>
       </div>
     </Card>

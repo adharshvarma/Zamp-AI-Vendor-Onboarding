@@ -1,23 +1,50 @@
-import React, { useState } from 'react';
+// File path: frontend/src/pages/AdminDashboard.jsx
+
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { StatusBadge } from '../components/StatusBadge';
 import { Button } from '../components/Button';
 import { Search } from 'lucide-react';
+import API from '../services/api';
 
-export function AdminDashboard({ companies, onReviewApplication }) {
+export function AdminDashboard({ onReviewApplication }) {
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
+  useEffect(() => {
+    const fetchAdminApps = async () => {
+      try {
+        const response = await API.get('/api/admin/applications');
+        setCompanies(response.data);
+      } catch (err) {
+        console.error("Failed to load admin applications queue:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAdminApps();
+  }, []);
+
   const filteredCompanies = companies.filter(c => {
-    const matchesSearch = c.companyName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          c.vendorId.toLowerCase().includes(searchTerm.toLowerCase());
+    const name = c.companyName || c.company_name || '';
+    const idStr = String(c.id || '');
+    const vId = c.vendorId || c.vendor_id || '';
+    
+    const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          idStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          vId.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
+  if (loading) {
+    return <div className="p-8 text-center text-xs text-slate-500">Loading admin verification queue...</div>;
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#173B63]">Admin Verification Console</h1>
@@ -46,6 +73,7 @@ export function AdminDashboard({ companies, onReviewApplication }) {
             >
               <option value="All">All Statuses</option>
               <option value="Pending">Pending</option>
+              <option value="Flagged">Flagged</option>
               <option value="Approved">Approved</option>
               <option value="Rejected">Rejected</option>
             </select>
@@ -64,23 +92,31 @@ export function AdminDashboard({ companies, onReviewApplication }) {
                 <th className="py-3 px-6 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredCompanies.map((company) => (
-                <tr key={company.id} className="hover:bg-slate-50/80">
-                  <td className="py-4 px-6 font-semibold text-[#173B63]">{company.companyName}</td>
-                  <td className="py-4 px-6 text-[#64748B] font-mono text-xs">{company.vendorId}</td>
-                  <td className="py-4 px-6 text-[#64748B] font-mono text-xs">{company.id}</td>
-                  <td className="py-4 px-6 text-[#64748B]">{company.regDate}</td>
-                  <td className="py-4 px-6">
-                    <StatusBadge status={company.status} />
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <Button variant="primary" className="py-1 px-3 text-xs" onClick={() => onReviewApplication(company)}>
-                      Review Application
-                    </Button>
-                  </td>
+            <tbody className="divide-y divide-slate-100 text-xs">
+              {filteredCompanies.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="py-6 text-center text-slate-400">No matching vendor applications found.</td>
                 </tr>
-              ))}
+              ) : (
+                filteredCompanies.map((company) => (
+                  <tr key={company.id} className="hover:bg-slate-50/80">
+                    <td className="py-4 px-6 font-semibold text-[#173B63]">{company.companyName || company.company_name}</td>
+                    <td className="py-4 px-6 text-[#64748B] font-mono">{company.vendorId || company.vendor_id}</td>
+                    <td className="py-4 px-6 text-[#64748B] font-mono">{company.applicationId || company.application_id}</td>
+                    <td className="py-4 px-6 text-[#64748B]">
+                      {company.createdAt ? new Date(company.createdAt).toLocaleDateString() : 'N/A'}
+                    </td>
+                    <td className="py-4 px-6">
+                      <StatusBadge status={company.status} />
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <Button variant="primary" className="py-1 px-3 text-xs" onClick={() => onReviewApplication(company)}>
+                        Review Application
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,7 +1,12 @@
+// File path: frontend/src/layout/Navbar.jsx
+
 import React from 'react';
 import { LogOut, User as UserIcon } from 'lucide-react';
 
 export function Navbar({ currentUser, onLogout, onLogoClick }) {
+  // Fallback helper to get display name
+  const displayName = currentUser?.name || currentUser?.email || 'Account';
+
   return (
     <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -21,7 +26,7 @@ export function Navbar({ currentUser, onLogout, onLogoClick }) {
               <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[#173B63]">
                 <UserIcon className="w-4 h-4" />
               </div>
-              <span className="hidden sm:inline">{currentUser.name || currentUser.email}</span>
+              <span className="hidden sm:inline font-semibold">{displayName}</span>
             </div>
             <button 
               onClick={onLogout}

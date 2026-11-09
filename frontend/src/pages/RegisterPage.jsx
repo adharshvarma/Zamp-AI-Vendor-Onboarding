@@ -1,7 +1,10 @@
+// File path: frontend/src/pages/RegisterPage.jsx
+
 import React, { useState } from 'react';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import API from '../services/api';
 
 export function RegisterPage({ onRegisterSuccess, onNavigateToSignIn }) {
   const [formData, setFormData] = useState({
@@ -14,15 +17,42 @@ export function RegisterPage({ onRegisterSuccess, onNavigateToSignIn }) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
     setError('');
-    onRegisterSuccess({ name: `${formData.firstName} ${formData.lastName}`, email: formData.email });
+    setLoading(true);
+
+    try {
+      // Connects to your backend auth router registration endpoint
+      const payload = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        mobile_number: formData.mobile,
+        password: formData.password,
+        confirm_password: formData.confirmPassword // <--- Added this line
+      };
+
+      const response = await API.post('/api/auth/register', payload);
+      
+      if (response.status === 201 || response.status === 200) {
+        onRegisterSuccess({ 
+          name: `${formData.firstName} ${formData.lastName}`, 
+          email: formData.email 
+        });
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      setError(err.response?.data?.detail || 'Registration failed. Please check your details and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,7 +130,9 @@ export function RegisterPage({ onRegisterSuccess, onNavigateToSignIn }) {
             />
 
             <div className="pt-2">
-              <Button type="submit" variant="primary" fullWidth>Create Account</Button>
+              <Button type="submit" variant="primary" fullWidth disabled={loading}>
+                {loading ? 'Creating Account...' : 'Create Account'}
+              </Button>
             </div>
           </form>
 
