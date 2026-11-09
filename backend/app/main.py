@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import verify_router, vendor_router, admin_router, auth_router
 
-app = FastAPI(title="ClearVend API", version="1.0.0")
+app = FastAPI(title="VendorGate API", version="1.0.0")
 
 # Read from environment variable, supporting multiple comma-separated URLs
 env_origins = os.getenv("CORS_ORIGINS", "")
@@ -31,4 +31,4 @@ app.include_router(auth_router.router)  # Include the auth router for authentica
 
 @app.get("/")
 def root():
-    return {"message": "ClearVend Cloud Backend is running successfully!"}
+    return {"message": "VendorGate Cloud Backend is running successfully!"}

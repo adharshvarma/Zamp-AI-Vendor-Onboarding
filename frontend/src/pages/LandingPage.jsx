@@ -13,7 +13,7 @@ export function LandingPage({ onNavigate }) {
             <div className="w-9 h-9 bg-[#173B63] text-white rounded-[10px] flex items-center justify-center font-bold text-xl">
               C
             </div>
-            <span className="text-xl font-extrabold text-[#173B63] tracking-tight">ClearVend</span>
+            <span className="text-xl font-extrabold text-[#173B63] tracking-tight">VendorGate</span>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => onNavigate('signin')}>Sign In</Button>
@@ -27,7 +27,7 @@ export function LandingPage({ onNavigate }) {
           <ShieldCheck className="w-4 h-4" /> AI-Powered Vendor Onboarding Platform
         </div>
         <h1 className="text-4xl sm:text-6xl font-extrabold text-[#173B63] mb-4 tracking-tight">
-          ClearVend
+          VendorGate
         </h1>
         <p className="text-xl font-semibold text-[#2563EB] mb-6">
           Simplifying Vendor Registration and Verification.
@@ -51,7 +51,7 @@ export function LandingPage({ onNavigate }) {
       </main>
 
       <footer className="text-center py-6 text-xs text-[#64748B] border-t border-slate-200 bg-white">
-        ClearVend Verification Platform © 2026. All rights reserved.
+        VendorGate Verification Platform © 2026. All rights reserved.
       </footer>
     </div>
   );

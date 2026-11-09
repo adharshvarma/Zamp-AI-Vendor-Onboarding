@@ -17,7 +17,7 @@ export function Navbar({ currentUser, onLogout, onLogoClick }) {
           <div className="w-9 h-9 bg-[#173B63] text-white rounded-[10px] flex items-center justify-center font-bold text-xl group-hover:bg-[#2563EB] transition-colors">
             C
           </div>
-          <span className="text-xl font-extrabold text-[#173B63] tracking-tight">ClearVend</span>
+          <span className="text-xl font-extrabold text-[#173B63] tracking-tight">VendorGate</span>
         </div>
 
         {currentUser && (

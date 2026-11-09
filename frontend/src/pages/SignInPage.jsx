@@ -35,7 +35,7 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister }) {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-extrabold text-[#173B63]">Sign In to ClearVend</h2>
+          <h2 className="text-2xl font-extrabold text-[#173B63]">Sign In to VendorGate</h2>
           <p className="text-xs text-[#64748B] mt-1">Manage your multi-company vendor profile and compliance status.</p>
         </div>
 

@@ -27,8 +27,8 @@ Return ONLY valid JSON format. No markdown blocks, just the JSON array.
 
 EMAIL_TEMPLATES = {
     "welcome": {
-        "subject": "Welcome to ClearVend — Vendor Portal Account Created",
-        "body": "Dear {name},\n\nYour personal vendor account has been successfully created on ClearVend. You can now log in to register and manage your company entities.\n\nBest regards,\nClearVend Team"
+        "subject": "Welcome to VendorGate — Vendor Portal Account Created",
+        "body": "Dear {name},\n\nYour personal vendor account has been successfully created on VendorGate. You can now log in to register and manage your company entities.\n\nBest regards,\nVendorGate Team"
     },
     "approval": {
         "subject": "Application Approved — {company_name} ({application_id})",

@@ -1,5 +1,3 @@
-# File path: backend/app/services/ai_evaluator.py
-
 import httpx
 import json
 import re
@@ -50,10 +48,12 @@ async def evaluate_vendor_documents_with_groq(company_data: dict, extracted_text
                 data = response.json()
                 content = data["choices"][0]["message"]["content"].strip()
 
-                content = re.sub(r'^```json\s*', '', content)
+                # Clean potential markdown code blocks if present
+                content = re.sub(r'^```json\s*', '', content, flags=re.IGNORECASE)
                 content = re.sub(r'^```\s*', '', content)
                 content = re.sub(r'\s*```$', '', content)
 
+                # Search and parse the JSON block safely
                 json_match = re.search(r'\{.*\}', content, re.DOTALL)
                 if json_match:
                     parsed = json.loads(json_match.group(0))

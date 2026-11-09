@@ -45,7 +45,7 @@ export function ProfilePage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-[#173B63]">My Profile</h1>
-        <p className="text-xs text-[#64748B]">View your ClearVend account credentials and role permissions.</p>
+        <p className="text-xs text-[#64748B]">View your VendorGate account credentials and role permissions.</p>
       </div>
 
       <Card title="Account Information">

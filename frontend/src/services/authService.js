@@ -28,7 +28,7 @@ export async function loginAdmin(email, password) {
   return {
     user: {
       id: 'ADM-001',
-      name: 'ClearVend Admin',
+      name: 'VendorGate Admin',
       email: email,
       role: 'admin',
     },

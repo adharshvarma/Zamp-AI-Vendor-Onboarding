@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/admin", tags=["Admin Review Operations"])
 class ReviewActionPayload(BaseModel):
     status: str # 'Approved', 'Rejected', 'Clarification_Required'
     remark: Optional[str] = ""
-    admin_email: str = "admin@clearvend.ai"
+    admin_email: str = "admin@VendorGate.ai"
 
 @router.get("/applications")
 def get_all_applications(db: Session = Depends(get_db)):

@@ -33,7 +33,7 @@ const INITIAL_DEMO_COMPANIES = [
     activityLogs: [
       { date: '2026-03-10 10:00 AM', text: 'Application submitted by vendor' },
       { date: '2026-03-10 10:05 AM', text: 'AI document extraction completed' },
-      { date: '2026-03-10 11:30 AM', text: 'Approved by ClearVend Admin' },
+      { date: '2026-03-10 11:30 AM', text: 'Approved by VendorGate Admin' },
     ],
   },
 ];
