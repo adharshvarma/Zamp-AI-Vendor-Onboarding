@@ -81,7 +81,8 @@ export function LandingPage({ onNavigate }) {
       <header className="max-w-6xl w-full mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
         <BrandMark />
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => onNavigate('signin')}>Sign in</Button>
+          <Button variant="outline" onClick={() => onNavigate('admin-signin')}>Admin sign in</Button>
+          <Button variant="outline" onClick={() => onNavigate('signin')}>Vendor sign in</Button>
           <Button variant="primary" onClick={() => onNavigate('register')}>Register</Button>
         </div>
       </header>
@@ -98,7 +99,7 @@ export function LandingPage({ onNavigate }) {
             </p>
             <div className="flex flex-wrap gap-3 mt-8">
               <Button variant="secondary" onClick={() => onNavigate('register')}>Register as a vendor</Button>
-              <Button variant="outline" onClick={() => onNavigate('signin')}>Sign in (vendors and admins)</Button>
+              <Button variant="outline" onClick={() => onNavigate('signin')}>Vendor sign in</Button>
             </div>
           </div>
           <CrossCheckSpecimen />

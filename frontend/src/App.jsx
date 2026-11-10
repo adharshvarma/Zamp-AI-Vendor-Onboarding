@@ -130,7 +130,10 @@ export default function App() {
       return <RegisterPage onRegisterSuccess={handleRegisterSuccess} onNavigateToSignIn={() => setCurrentRoute('signin')} onHome={() => setCurrentRoute('landing')} />;
     }
     if (currentRoute === 'signin') {
-      return <SignInPage onSignInSuccess={handleSignInSuccess} onNavigateToRegister={() => setCurrentRoute('register')} onHome={() => setCurrentRoute('landing')} />;
+      return <SignInPage key="vendor" portal="vendor" onSignInSuccess={handleSignInSuccess} onNavigateToRegister={() => setCurrentRoute('register')} onHome={() => setCurrentRoute('landing')} onSwitchPortal={() => setCurrentRoute('admin-signin')} />;
+    }
+    if (currentRoute === 'admin-signin') {
+      return <SignInPage key="admin" portal="admin" onSignInSuccess={handleSignInSuccess} onNavigateToRegister={() => setCurrentRoute('register')} onHome={() => setCurrentRoute('landing')} onSwitchPortal={() => setCurrentRoute('signin')} />;
     }
     return <LandingPage onNavigate={setCurrentRoute} />;
   }

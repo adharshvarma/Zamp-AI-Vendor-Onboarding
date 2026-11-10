@@ -44,7 +44,7 @@ def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         mobile_number=user_data.mobile_number,
-        role=user_data.role
+        role="vendor"  # public sign-up creates vendor accounts only; admins are created by the company
     )
     
     db.add(new_user)

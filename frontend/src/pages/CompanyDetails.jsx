@@ -80,7 +80,7 @@ function FixAndResubmit({ comp, onDone }) {
     <Card title="Fix & Resubmit">
       <div className="space-y-4">
         <p className="text-xs text-slate-600">
-          Correct any details below and/or re-upload the documents mentioned above. The AI will re-check everything immediately.
+          Correct any details below and/or re-upload the documents mentioned above. Your application will be checked again immediately.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Legal Company Name" value={form.company_name} onChange={(e) => set('company_name', e.target.value)} />

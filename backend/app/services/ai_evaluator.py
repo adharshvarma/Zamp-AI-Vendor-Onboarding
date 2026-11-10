@@ -89,14 +89,14 @@ EXTRACTION_PROMPTS = {
 Return ONLY a JSON object with these keys:
 {"document_type_detected": one of ["PAN Card","GST Certificate","Cancelled Cheque","Aadhaar Card","Bank Statement","Other"],
  "is_legible": true/false,
- "pan_number": "10 character PAN exactly as printed, or null",
+ "pan_number": "the PAN exactly as printed: exactly 10 characters (5 letters, 4 digits, 1 letter); copy character by character, or null",
  "name": "name printed on the card, or null",
  "date": "date of birth / incorporation as printed, or null"}""",
     DOC_GST: """Read this image. It is supposed to be an Indian GST Registration Certificate (Form GST REG-06).
 Return ONLY a JSON object with these keys:
 {"document_type_detected": one of ["PAN Card","GST Certificate","Cancelled Cheque","Aadhaar Card","Bank Statement","Other"],
  "is_legible": true/false,
- "gstin": "the 15 character Registration Number / GSTIN printed near the top, exactly as printed, or null",
+ "gstin": "the Registration Number / GSTIN printed near the top: exactly 15 characters; copy it character by character without repeating any letter, or null",
  "legal_name": "legal name, or null",
  "trade_name": "trade name, or null",
  "constitution": "constitution of business, or null",
@@ -107,7 +107,7 @@ Return ONLY a JSON object with these keys:
 {"document_type_detected": one of ["PAN Card","GST Certificate","Cancelled Cheque","Aadhaar Card","Bank Statement","Other"],
  "is_legible": true/false,
  "account_number": "account number digits exactly as printed, or null",
- "ifsc": "11 character IFSC exactly as printed, or null",
+ "ifsc": "the IFSC exactly as printed: exactly 11 characters, the 5th is always the digit 0, or null",
  "bank_name": "bank name, or null",
  "account_holder_name": "account holder / company name printed on it, or null",
  "is_cancelled": true if the word CANCELLED or crossed lines are visible, else false}""",
@@ -232,14 +232,26 @@ def _clean_ifsc(value) -> str:
 _CONFUSABLE = str.maketrans({"O": "0", "Q": "0", "D": "0", "I": "1", "L": "1", "S": "5", "B": "8", "Z": "2", "G": "6"})
 
 
+def _edit_distance(a: str, b: str) -> int:
+    """Number of single-character changes (swap, extra or missing character) between a and b."""
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
 def compare_ids(a: str, b: str) -> str:
-    """'match' | 'near' (1-2 characters differ: likely typo) | 'different' | 'unknown'"""
+    """'match' | 'near' (1-2 characters wrong, extra or missing) | 'different' | 'unknown'"""
     a, b = _clean_id(a), _clean_id(b)
     if not a or not b:
         return "unknown"
-    if a == b or a.translate(_CONFUSABLE) == b.translate(_CONFUSABLE):
+    ta, tb = a.translate(_CONFUSABLE), b.translate(_CONFUSABLE)
+    if ta == tb:
         return "match"
-    if len(a) == len(b) and sum(1 for x, y in zip(a, b) if x != y) <= 2:
+    if _edit_distance(ta, tb) <= 2:
         return "near"
     return "different"
 
@@ -327,35 +339,44 @@ def _doc_quality(doc: str, ex: dict, allowed: set, checks: list) -> bool:
             "ai_unavailable": (f"{doc} could not be read automatically right now, so it needs a manual check.", None),
         }
         detail, action = messages.get(err, messages["unreadable"])
-        checks.append(_check(f"{doc}_quality", f"{doc} received and readable", WARN, detail, action, doc, "document"))
+        c = _check(f"{doc}_quality", f"{doc} received and readable", WARN, detail, action, doc, "document")
+        c["variant"] = err if err in messages else "unreadable"
+        checks.append(c)
         return False
     detected = ex.get("document_type_detected")
     if detected in KNOWN_DOC_TYPES and detected not in allowed:
-        checks.append(_check(f"{doc}_quality", "Right document in the right place", WARN,
-            f"The file uploaded as {doc} looks like a {detected}.", f"Upload your {doc} in the {doc} slot.", doc, "document"))
+        c = _check(f"{doc}_quality", "Right document in the right place", WARN,
+            f"The file uploaded as {doc} looks like a {detected}.", f"Upload your {doc} in the {doc} slot.", doc, "document")
+        c["variant"] = "wrong_type"
+        checks.append(c)
         return False
     if _truthy_false(ex.get("is_legible")):
-        checks.append(_check(f"{doc}_quality", f"{doc} readable", WARN,
-            f"The {doc} image is blurry or cropped.", f"Re-upload a clear image of your {doc}.", doc, "document"))
+        c = _check(f"{doc}_quality", f"{doc} readable", WARN,
+            f"The {doc} image is blurry or cropped.", f"Re-upload a clear image of your {doc}.", doc, "document")
+        c["variant"] = "unreadable"
+        checks.append(c)
         return False
     checks.append(_check(f"{doc}_quality", f"{doc} received and readable", PASS, f"{doc} was read successfully.", None, doc, "document"))
     return True
 
 
-def _form_vs_doc_id(checks, cid, label, doc, form_val, doc_val, what, confirmed=False):
+def _form_vs_doc_id(checks, cid, label, doc, form_val, doc_val, what, valid_re=None):
     """Layer 3: a difference between form and document is a filling mistake -> Pending.
-    confirmed=True means another document independently proves the form value is right,
-    so a 1-2 character difference is the AI misreading the image, not the vendor's mistake."""
+    If what was read from the document is not even a valid number, the image was unclear
+    (official documents always carry valid numbers) -> ask for a clearer copy, don't blame the vendor."""
     res = compare_ids(form_val, doc_val)
-    if res == "near" and confirmed:
-        checks.append(_check(cid, label, INFO,
-            f"The form says {_clean_id(form_val)}; the AI read {doc_val} on the {doc}. Only 1-2 characters differ and another "
-            f"document confirms the form value, so this is treated as a reading slip. Admin may glance at the image.",
-            None, doc, "note"))
-        return
     if res == "unknown" and not doc_val:
-        checks.append(_check(cid, label, WARN, f"The {what} could not be found on the {doc}.",
-            f"Re-upload a clear image of your {doc}.", doc, "form_vs_document"))
+        c = _check(cid, label, WARN, f"The {what} could not be found on the {doc}.",
+            f"Re-upload a clear image of your {doc}.", doc, "form_vs_document")
+        c["variant"] = "unclear"
+        checks.append(c)
+    elif res != "match" and valid_re is not None and not valid_re.match(_clean_id(doc_val)):
+        c = _check(cid, label, WARN,
+            f"The AI read '{doc_val}' as the {what} on the {doc}, which is not a valid {what}, and it could not be "
+            f"confirmed by another document. The image is probably unclear.",
+            f"Re-upload a clear image of your {doc}.", doc, "form_vs_document")
+        c["variant"] = "unclear"
+        checks.append(c)
     elif res == "unknown":
         checks.append(_check(cid, label, WARN, f"The {what} is missing in the form. The {doc} shows {doc_val}.",
             f"Enter the {what} in the form ({doc} shows {doc_val}).", doc, "form_vs_document"))
@@ -429,6 +450,27 @@ def run_rules(form: dict, extractions: dict) -> list:
     doc_ifsc = _find_in_extraction(ex_bank, "ifsc", IFSC_SEARCH, _clean_ifsc) if bank_ok else ""
     doc_holder = (ex_bank.get("account_holder_name") or "").strip() if bank_ok else ""
 
+    # ---------- Correct AI misreads that a second document confirms ----------
+    # Example: certificate shows 33AABCT1234K1Z5, AI reads 33AAABCT1234K1Z5 (extra A).
+    # The PAN card independently shows AABCT1234K, which is inside the typed GSTIN,
+    # so the typed GSTIN is proven right and the reading is corrected (admin is told).
+    raw_gstin_compact = _clean_id(ex_gst.get("gstin")) if gst_ok else ""
+    raw_pan_compact = _clean_id(ex_pan.get("pan_number")) if pan_ok else ""
+    pan_read_exactly = pan_ok and (compare_ids(doc_pan, form_pan) == "match" or form_pan in raw_pan_compact)
+    if (pan_ok and doc_pan and PAN_RE.match(form_pan) and compare_ids(doc_pan, form_pan) == "near"
+            and gst_ok and (form_pan in raw_gstin_compact or form_pan in (doc_gstin or ""))):
+        checks.append(_check("fix_pan", "AI reading corrected", INFO,
+            f"The AI read the PAN card as {doc_pan}. The GST certificate confirms {form_pan}, as typed. "
+            f"Reading corrected; admin may glance at the PAN card image.", None, DOC_PAN, "note"))
+        doc_pan = form_pan
+    if (gst_ok and doc_gstin and GSTIN_RE.match(form_gstin) and form_gstin[2:12] == form_pan
+            and compare_ids(doc_gstin, form_gstin) == "near"
+            and pan_read_exactly):
+        checks.append(_check("fix_gstin", "AI reading corrected", INFO,
+            f"The AI read the GST certificate as {doc_gstin}. The PAN card confirms {form_gstin}, as typed. "
+            f"Reading corrected; admin may glance at the GST certificate image.", None, DOC_GST, "note"))
+        doc_gstin = form_gstin
+
     # ---------- Layer 2: form format ----------
     if PAN_RE.match(form_pan):
         checks.append(_check("pan_format", "PAN format", PASS, f"{form_pan} is a valid PAN format.", None, DOC_PAN, "form"))
@@ -473,15 +515,11 @@ def run_rules(form: dict, extractions: dict) -> list:
 
     # ---------- Layer 3: form vs documents (typing mistakes) ----------
     if pan_ok:
-        pan_confirmed = PAN_RE.match(form_pan) is not None and gst_ok and len(doc_gstin or "") == 15 \
-            and compare_ids(form_pan, doc_gstin[2:12]) == "match"
-        _form_vs_doc_id(checks, "pan_match", "PAN in form matches PAN card", DOC_PAN, form_pan, doc_pan, "PAN", pan_confirmed)
+        _form_vs_doc_id(checks, "pan_match", "PAN in form matches PAN card", DOC_PAN, form_pan, doc_pan, "PAN", PAN_RE)
         if doc_pan_name:
             _form_vs_doc_name(checks, "pan_name", "Company name matches PAN card", DOC_PAN, company, doc_pan_name)
     if gst_ok:
-        gst_confirmed = GSTIN_RE.match(form_gstin) is not None and form_gstin[2:12] == form_pan \
-            and pan_ok and compare_ids(form_pan, doc_pan) == "match"
-        _form_vs_doc_id(checks, "gst_match", "GSTIN in form matches GST certificate", DOC_GST, form_gstin, doc_gstin, "GSTIN", gst_confirmed)
+        _form_vs_doc_id(checks, "gst_match", "GSTIN in form matches GST certificate", DOC_GST, form_gstin, doc_gstin, "GSTIN", GSTIN_RE)
         if doc_gst_name and not doc_pan_name:
             _form_vs_doc_name(checks, "gst_name", "Company name matches GST certificate", DOC_GST, company, doc_gst_name)
     if bank_ok:
@@ -494,20 +532,14 @@ def run_rules(form: dict, extractions: dict) -> list:
             checks.append(_check("acc_match", "Account number matches cheque", WARN,
                 f"The form says A/c {form_acc or '(blank)'} but the cheque shows A/c {doc_acc}. Money would go to the wrong account.",
                 f"Correct the account number so it matches the cheque ({doc_acc}), or upload the cheque of the account you typed.", DOC_BANK, "form_vs_document"))
-        _form_vs_doc_id(checks, "ifsc_match", "IFSC matches cheque", DOC_BANK, form_ifsc, doc_ifsc, "IFSC")
+        _form_vs_doc_id(checks, "ifsc_match", "IFSC matches cheque", DOC_BANK, form_ifsc, doc_ifsc, "IFSC", IFSC_RE)
 
     # ---------- Layer 4: documents vs each other (fraud signals) ----------
-    if pan_ok and gst_ok and doc_pan and doc_gstin and len(doc_gstin) == 15:
+    if pan_ok and gst_ok and PAN_RE.match(doc_pan or "") and GSTIN_RE.match(doc_gstin or ""):
         res = compare_ids(doc_pan, doc_gstin[2:12])
         if res == "match":
             checks.append(_check("x_pan_gst", "GST certificate belongs to the same PAN", PASS,
                 f"The GSTIN {doc_gstin} contains the PAN {doc_pan} from the PAN card.", None, DOC_GST, "cross_document"))
-        elif res == "near" and PAN_RE.match(form_pan) and form_gstin[2:12] == form_pan and (
-                compare_ids(form_pan, doc_pan) == "match" or compare_ids(form_pan, doc_gstin[2:12]) == "match"):
-            checks.append(_check("x_pan_gst", "GST certificate belongs to the same PAN", INFO,
-                f"The PAN card ({doc_pan}) and the PAN inside the GSTIN ({doc_gstin[2:12]}) differ by only 1-2 characters, "
-                f"and the form values agree with each other. Treated as an AI reading slip; admin may glance at the images.",
-                None, DOC_GST, "note"))
         elif res == "near":
             checks.append(_check("x_pan_gst", "GST certificate belongs to the same PAN", WARN,
                 f"The GSTIN on the certificate contains {doc_gstin[2:12]}, almost but not exactly the PAN card's {doc_pan}.",
@@ -563,39 +595,94 @@ def _doc_status(doc_checks):
     return "Pass"
 
 
-ISSUE_TEXT = {
-    "x_pan_gst": "GST certificate is under a different PAN",
-    "x_name_pan_gst": "PAN card and GST certificate names differ",
-    "x_name_bank": "bank account is in another party's name",
-    "pan_match": "PAN typed differs from the PAN card",
-    "pan_name": "company name differs from the PAN card",
-    "gst_match": "GSTIN typed differs from the GST certificate",
-    "gst_name": "company name differs from the GST certificate",
-    "acc_match": "account number differs from the cheque",
-    "ifsc_match": "IFSC differs from the cheque",
-    "pan_format": "PAN typed is not valid",
-    "gst_format": "GSTIN typed is not valid",
-    "ifsc_format": "IFSC typed is not valid",
-    "acc_format": "account number typed is not valid",
-    "gst_pan_form": "GSTIN and PAN typed don't match",
-    "gst_state": "GST state differs from the address",
-    "holder_form": "bank account not in the company's name",
-    "pan_entity": "PAN type doesn't match the business type",
+DOC_LOWER = {DOC_PAN: "PAN card", DOC_GST: "GST certificate", DOC_BANK: "cancelled cheque"}
+
+# Short professional issue titles (used in lists, headlines and the vendor view)
+ISSUE_TITLES = {
+    "pan_format": "Invalid PAN",
+    "gst_format": "Invalid GSTIN",
+    "ifsc_format": "Invalid IFSC",
+    "acc_format": "Invalid account number",
+    "gst_pan_form": "GSTIN and PAN do not correspond",
+    "gst_state": "State mismatch",
+    "holder_form": "Account holder name mismatch",
+    "pan_match": "PAN mismatch",
+    "pan_name": "Company name mismatch",
+    "gst_match": "GSTIN mismatch",
+    "gst_name": "Company name mismatch",
+    "acc_match": "Account number mismatch",
+    "ifsc_match": "IFSC mismatch",
+    "pan_entity": "Business type mismatch",
+    "x_pan_gst": "PAN and GST registration mismatch",
+    "x_name_pan_gst": "Name mismatch across documents",
+    "x_name_bank": "Bank account not in company name",
+}
+
+VENDOR_TEXT = {
+    "pan_format": "The PAN entered is not in a valid format (example: ABCDE1234F). Please correct it and resubmit.",
+    "gst_format": "The GSTIN entered is not in a valid format (example: 33ABCDE1234F1Z5). Please correct it and resubmit.",
+    "ifsc_format": "The IFSC entered is not in a valid format (example: HDFC0001234). Please correct it and resubmit.",
+    "acc_format": "The account number entered must have 9 to 18 digits. Please correct it and resubmit.",
+    "gst_pan_form": "The GSTIN entered does not correspond to the PAN entered. Please check both and resubmit.",
+    "gst_state": "The GSTIN entered is registered in a different state from the address provided. Please enter the GSTIN for this state, or your registered office address.",
+    "holder_form": "The bank account must be held in the company's registered name. Please correct the account holder name.",
+    "pan_match": "The PAN entered does not match your PAN card. Please correct it and resubmit.",
+    "pan_name": "Please enter the company name as shown on your PAN card.",
+    "gst_match": "The GSTIN entered does not match your GST certificate. Please correct it and resubmit.",
+    "gst_name": "Please enter the company name as shown on your GST certificate.",
+    "acc_match": "The account number entered does not match your cancelled cheque. Please correct it and resubmit.",
+    "ifsc_match": "The IFSC entered does not match your cancelled cheque. Please correct it and resubmit.",
+    "pan_entity": "The PAN provided does not match the business type selected. Please check the business type, or upload the company's PAN card.",
+}
+
+REJECT_TEXT = {
+    "x_pan_gst": "The PAN card and GST certificate belong to different entities.",
+    "x_name_pan_gst": "The PAN card and GST certificate are issued in different names.",
+    "x_name_bank": "The bank account provided is not in the company's registered name.",
+}
+
+RISK_TEXT = {
+    "x_pan_gst": "PAN and GST registration belong to different entities",
+    "x_name_pan_gst": "documents issued in different names",
+    "x_name_bank": "third-party bank account",
 }
 
 
+def _vendor_item(c):
+    """(title, message) shown to the vendor for one failed / pending check. No internal details."""
+    cid, doc = c["id"], c.get("document")
+    d = DOC_LOWER.get(doc, "document")
+    variant = c.get("variant")
+    if cid.endswith("_quality"):
+        return {
+            "missing": ("Document missing", f"Please upload your {d}."),
+            "unsupported_format": ("Unsupported file", f"Please upload your {d} as a JPG or PNG image."),
+            "too_large": ("File too large", f"Please upload your {d} as an image smaller than 4 MB."),
+            "wrong_type": ("Incorrect document", f"The file uploaded as your {d} does not appear to be a {d}. Please upload the correct document."),
+            "ai_unavailable": ("Under review", f"Your {d} is being reviewed by our team. No action is needed."),
+        }.get(variant, ("Document unclear", f"We could not read your {d} clearly. Please upload a clear, complete image."))
+    if variant == "unclear":
+        return ("Document unclear", f"We could not read your {d} clearly. Please upload a clear, complete image.")
+    if c["status"] == FAIL and cid in REJECT_TEXT:
+        return (ISSUE_TITLES[cid], REJECT_TEXT[cid])
+    if cid == "x_pan_gst":
+        return ("Document unclear", "We could not confirm the PAN on your GST certificate. Please upload clear copies of your PAN card and GST certificate.")
+    if cid == "x_name_pan_gst":
+        return ("Name mismatch across documents", "The names on your PAN card and GST certificate differ. Please upload documents showing the same registered name.")
+    if cid == "x_name_bank":
+        return ("Bank account name differs", "The name on your cancelled cheque differs from your PAN card. Please upload a bank letter confirming the account holder name.")
+    return (ISSUE_TITLES.get(cid, c["label"]), VENDOR_TEXT.get(cid, c.get("vendor_action") or c["detail"]))
+
+
 def _issue(c):
-    if c["id"].startswith("x_") and c["status"] == WARN:
-        return "names on the documents don't fully match" if "name" in c["id"] else "PAN on documents doesn't fully match"
-    if c["id"] in ISSUE_TEXT:
-        return ISSUE_TEXT[c["id"]]
-    if c["id"].endswith("_quality"):
-        return f"{c['document']} missing, wrong or unclear"
-    return c["label"]
+    return _vendor_item(c)[0]
 
 
 def _sentence(text):
     return text[:1].upper() + text[1:] if text else text
+
+
+VENDOR_DOC_LABEL = {"Pass": "Verified", "Needs fix": "Action needed", "Fail": "Not accepted", "Not applicable": "Not required"}
 
 
 def decide(form: dict, extractions: dict, checks: list) -> dict:
@@ -604,40 +691,60 @@ def decide(form: dict, extractions: dict, checks: list) -> dict:
     passes = [c for c in checks if c["status"] == PASS]
     infos = [c for c in checks if c["status"] == INFO]
     gst_yes = str(form.get("gst_registered") or "").lower() == "yes"
-    company = (form.get("company_name") or "the company").strip()
+    notes = [c for c in infos if c["id"] != "gst_na"]
 
+    def unique_items(cs):
+        items, seen = [], set()
+        for c in cs:
+            title, msg = _vendor_item(c)
+            if msg not in seen:
+                seen.add(msg)
+                items.append({"title": title, "message": msg})
+        return items
+
+    risk = None
     if fails:
         decision = STATUS_REJECTED
-        headline = "Rejected: " + "; ".join(dict.fromkeys(_issue(c) for c in fails[:3]))
-        summary = (f"{company} was rejected because the documents do not belong to the same business. "
-                   + _sentence(fails[0]["detail"])
-                   + (f" {len(fails) - 1} more conflict{'s' if len(fails) > 2 else ''} found." if len(fails) > 1 else "")
-                   + " This is a common sign of a fraudulent or mixed-up submission.")
+        vendor_items = unique_items(fails)
+        headline = "Rejected: " + "; ".join(dict.fromkeys(i["title"] for i in vendor_items[:3]))
+        vendor_title = "Application not approved"
+        vendor_summary = "We are unable to approve this application for the reason(s) below."
+        risk = "; ".join(dict.fromkeys(RISK_TEXT.get(c["id"], c["label"]) for c in fails))
+        admin_summary = ("The documents are inconsistent with each other. " + _sentence(fails[0]["detail"])
+                         + (f" {len(fails) - 1} further inconsistenc{'ies' if len(fails) > 2 else 'y'} found." if len(fails) > 1 else ""))
     elif warns:
         decision = STATUS_PENDING
-        headline = "Pending: " + "; ".join(dict.fromkeys(_issue(c) for c in warns[:3]))
-        n = len({c.get("vendor_action") or c["label"] for c in warns})
-        summary = (f"{company} can't be approved yet. No document clearly belongs to a different business, "
-                   f"but {n} thing{'s' if n != 1 else ''} need{'' if n != 1 else 's'} to be fixed by the vendor. "
-                   f"First: {_sentence(warns[0]['detail'])}")
+        vendor_items = unique_items(warns)
+        headline = "Pending: " + "; ".join(dict.fromkeys(i["title"] for i in vendor_items[:3]))
+        only_review = all(_vendor_item(c)[0] == "Under review" for c in warns)
+        if only_review:
+            vendor_title = "Under review"
+            vendor_summary = "Your documents are being reviewed by our team. No action is needed from you at this time."
+        else:
+            vendor_title = "Action required"
+            n = len(vendor_items)
+            vendor_summary = f"Your application needs {'the following' if n > 1 else 'one correction'} before it can be approved."
+        titles = list(dict.fromkeys(i["title"] for i in vendor_items))
+        if only_review:
+            admin_summary = "Automatic document reading was unavailable. Please review the uploaded documents manually."
+        else:
+            admin_summary = (f"Awaiting vendor correction: " + "; ".join(titles)
+                             + ". No inconsistency between documents was found.")
     else:
         decision = STATUS_APPROVED
-        headline = "Approved: all documents match"
-        docs = "the PAN card, GST certificate and cancelled cheque" if gst_yes else "the PAN card and cancelled cheque"
-        summary = f"Everything matches for {company}. The form agrees with {docs}, and they all belong to the same company."
+        vendor_items = []
+        headline = "Approved: all details verified"
+        vendor_title = "Verification complete"
+        vendor_summary = ("Your application has been verified against the documents provided and is now with our "
+                          "procurement team for final approval. No action is needed.")
+        docs = "PAN card, GST certificate and cancelled cheque" if gst_yes else "PAN card and cancelled cheque"
+        admin_summary = f"The form matches the {docs}, and all documents are issued to the same entity. Recommended for approval."
         if gst_yes:
-            summary += " The GSTIN is registered under the same PAN."
+            admin_summary += " GSTIN is registered under the same PAN."
         else:
-            summary += " The vendor is not GST registered, so no GST certificate was needed."
-    if infos and decision != STATUS_REJECTED:
-        notes = [c for c in infos if c["id"] != "gst_na"]
-        if notes:
-            summary += f" {len(notes)} note{'s' if len(notes) != 1 else ''} for the admin."
-
-    actions = []
-    for c in (fails if fails else warns):
-        if c.get("vendor_action") and c["vendor_action"] not in actions:
-            actions.append(c["vendor_action"])
+            admin_summary += " Vendor is not GST registered."
+    if notes and decision != STATUS_REJECTED:
+        admin_summary += f" {len(notes)} note{'s' if len(notes) != 1 else ''} for review."
 
     documents = []
     for doc in (DOC_PAN, DOC_GST, DOC_BANK):
@@ -650,13 +757,18 @@ def decide(form: dict, extractions: dict, checks: list) -> dict:
         result = _doc_status(doc_checks)
         if bad:
             remarks = _sentence(bad[0]["detail"])
+            vendor_remark = _vendor_item(bad[0])[1]
         elif result == "Not applicable":
             remarks = doc_checks[0]["detail"]
+            vendor_remark = "Not required, as you are not GST registered."
         else:
             remarks = "Everything on this document checks out."
+            vendor_remark = "Verified."
         documents.append({
             "document": doc,
             "result": result,
+            "vendor_result": VENDOR_DOC_LABEL.get(result, result),
+            "vendor_remark": vendor_remark,
             "extracted": extracted if gst_yes or doc != DOC_GST else {},
             "remarks": remarks,
             "checks": doc_checks,
@@ -665,33 +777,39 @@ def decide(form: dict, extractions: dict, checks: list) -> dict:
     return {
         "decision": decision,
         "headline": headline,
-        "summary": summary,
-        "vendor_actions": actions,
-        "vendor_message": build_vendor_message(form, decision, actions, fails),
+        "summary": admin_summary,
+        "risk": risk,
+        "vendor_title": vendor_title,
+        "vendor_summary": vendor_summary,
+        "vendor_items": vendor_items,
+        "vendor_actions": [f"{i['title']}: {i['message']}" for i in vendor_items],
+        "vendor_message": build_vendor_message(form, decision, vendor_items, vendor_title),
         "documents": documents,
         "checks": checks,
         "counts": {"pass": len(passes), "warn": len(warns), "fail": len(fails), "info": len(infos)},
         "evaluated_at": datetime.now(timezone.utc).isoformat(),
-        "engine": "VendorGate rules v3 + Groq vision extraction",
+        "engine": "VendorGate rules v4 + Groq vision extraction",
     }
 
 
-def build_vendor_message(form, decision, actions, fails):
-    name = form.get("contact_name") or "Vendor"
+def build_vendor_message(form, decision, items, vendor_title=""):
+    name = form.get("contact_name") or "Sir/Madam"
     company = form.get("company_name") or "your company"
+    opening = f"Dear {name},\n\nThank you for submitting the vendor registration for {company}."
+    sign = "\n\nRegards,\nProcurement Team"
     if decision == STATUS_APPROVED:
-        return (f"Dear {name},\n\nGood news: the onboarding application for {company} has passed all verification checks "
-                f"and is with our procurement team for final sign-off. You don't need to do anything.\n\nRegards,\nVendorGate Team")
-    lines = "\n".join(f"  {i+1}. {a}" for i, a in enumerate(actions)) or "  1. Please contact us for details."
-    if decision == STATUS_REJECTED:
-        lines = "\n".join(f"  {i+1}. {c['vendor_action']}" for i, c in enumerate(fails) if c.get("vendor_action")) or lines
+        return (f"{opening} Your documents have been verified successfully, and the application is now with our "
+                f"procurement team for final approval. We will notify you once it is complete.{sign}")
+    if decision == STATUS_PENDING and vendor_title == "Under review":
+        return (f"{opening} Your documents are currently being reviewed by our team. No action is needed from you; "
+                f"we will update you shortly.{sign}")
+    lines = "\n".join(f"  {i + 1}. {it['title']}: {it['message']}" for i, it in enumerate(items))
     if decision == STATUS_PENDING:
-        return (f"Dear {name},\n\nThank you for submitting {company}. Before we can approve it, please:\n\n"
-                f"{lines}\n\nLog in to VendorGate, open the application and use 'Fix & resubmit'. It is checked again immediately.\n\nRegards,\nVendorGate Team")
-    reasons = "\n".join(f"  - {_sentence(c['detail'])}" for c in fails[:3])
-    return (f"Dear {name},\n\nWe could not approve the application for {company} because the documents belong to different parties:\n\n"
-            f"{reasons}\n\nIf this is a mistake, please submit a fresh application with the PAN card, GST certificate and cancelled cheque "
-            f"of the same company.\n\nRegards,\nVendorGate Team")
+        return (f"{opening} We have reviewed your application and need the following before we can proceed:\n\n"
+                f"{lines}\n\nPlease log in to the vendor portal, open your application and select 'Fix & resubmit'.{sign}")
+    return (f"{opening} After reviewing the documents provided, we are unable to approve the application for the "
+            f"following reason(s):\n\n{lines}\n\nYou may submit a new application with documents issued to the same "
+            f"registered entity, including a bank account held in the company's name.{sign}")
 
 
 # ==================================================================

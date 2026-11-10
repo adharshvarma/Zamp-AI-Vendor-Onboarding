@@ -42,9 +42,18 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const login = async (email, password) => {
+  // expectedRole: 'admin' or 'vendor'. A login on the wrong portal is refused before anything is stored.
+  const login = async (email, password, expectedRole) => {
     const response = await API.post('/api/auth/login', { email, password });
     const { access_token, role } = response.data;
+    const actualRole = role === 'admin' ? 'admin' : 'vendor';
+    if (expectedRole && actualRole !== expectedRole) {
+      const err = new Error('wrong portal');
+      err.response = { data: { detail: actualRole === 'admin'
+        ? 'This is a procurement admin account. Please use the admin sign-in.'
+        : 'This is a vendor account. Please use the vendor sign-in.' } };
+      throw err;
+    }
     
     sessionStorage.setItem('access_token', access_token);
     sessionStorage.setItem('user_role', role);

@@ -7,7 +7,8 @@ import { Card } from '../components/Card';
 import { BrandMark } from '../layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 
-export function SignInPage({ onSignInSuccess, onNavigateToRegister, onHome }) {
+export function SignInPage({ onSignInSuccess, onNavigateToRegister, onHome, portal = 'vendor', onSwitchPortal }) {
+  const isAdminPortal = portal === 'admin';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +23,7 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister, onHome }) {
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, isAdminPortal ? 'admin' : 'vendor');
       onSignInSuccess();
     } catch (err) {
       console.error("Login error:", err);
@@ -41,8 +42,15 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister, onHome }) {
           </button>
         </div>
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-extrabold text-[#0E2A47]">Sign In to VendorGate</h2>
-          <p className="text-xs text-[#64748B] mt-1">Manage your multi-company vendor profile and compliance status.</p>
+          <span className={`inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full mb-3 ${isAdminPortal ? 'bg-[#0E2A47] text-white' : 'bg-[#E6F4F1] text-[#0F766E]'}`}>
+            {isAdminPortal ? 'Procurement admin portal' : 'Vendor portal'}
+          </span>
+          <h2 className="text-2xl font-extrabold text-[#0E2A47]">{isAdminPortal ? 'Admin sign in' : 'Vendor sign in'}</h2>
+          <p className="text-xs text-[#64748B] mt-1">
+            {isAdminPortal
+              ? 'Review vendor applications and give the final decision.'
+              : 'Register your companies and track their verification status.'}
+          </p>
         </div>
 
         <Card>
@@ -83,12 +91,22 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister, onHome }) {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-xs text-[#64748B]">
-            Don't have an account?{' '}
-            <button onClick={onNavigateToRegister} className="text-[#0F766E] font-semibold hover:underline">
-              Create Account
-            </button>
-          </div>
+          {!isAdminPortal && (
+            <div className="mt-6 text-center text-xs text-[#64748B]">
+              Don't have an account?{' '}
+              <button onClick={onNavigateToRegister} className="text-[#0F766E] font-semibold hover:underline">
+                Create Account
+              </button>
+            </div>
+          )}
+          {onSwitchPortal && (
+            <div className="mt-3 text-center text-xs text-[#64748B]">
+              {isAdminPortal ? 'Are you a vendor?' : 'Procurement team?'}{' '}
+              <button onClick={onSwitchPortal} className="text-[#0F766E] font-semibold hover:underline">
+                {isAdminPortal ? 'Vendor sign in' : 'Admin sign in'}
+              </button>
+            </div>
+          )}
         </Card>
       </div>
     </div>

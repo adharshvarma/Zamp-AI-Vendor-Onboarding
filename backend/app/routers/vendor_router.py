@@ -351,7 +351,20 @@ def get_company_details(
     documents = db.query(Document).filter(Document.company_id == company.id).all()
     data = company_to_dict(company, documents)
     logs = db.query(AuditLog).filter(AuditLog.company_id == company.id).order_by(AuditLog.created_at.asc()).all()
-    data["activity"] = [
-        {"action": l.action_text, "remark": l.remark, "by": l.actor_email, "at": l.created_at} for l in logs
-    ]
+    data["activity"] = [vendor_activity(l) for l in logs]
     return data
+
+
+def vendor_activity(log) -> dict:
+    """Timeline entry as the vendor should see it: no internal process details."""
+    text = log.action_text or ""
+    status = text.rsplit(":", 1)[-1].strip().split(" ")[0] if ":" in text else ""
+    if text.startswith("Vendor resubmitted"):
+        action, remark = f"Application resubmitted and re-checked: {status}", None
+    elif text.startswith("AI verification"):
+        action, remark = f"Application submitted and checked: {status}", None
+    elif text.startswith("Admin final decision"):
+        action, remark = f"Procurement team decision: {status}", log.remark or None
+    else:
+        action, remark = text, None
+    return {"action": action, "remark": remark, "by": None, "at": log.created_at}

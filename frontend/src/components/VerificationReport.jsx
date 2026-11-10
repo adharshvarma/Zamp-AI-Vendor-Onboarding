@@ -121,21 +121,123 @@ function DocumentCard({ doc }) {
   );
 }
 
-export function VerificationReport({ report, status, showVendorMessage = false }) {
+const VENDOR_DOC_STYLE = {
+  'Verified': 'bg-emerald-50 text-[#15803D] border-emerald-200',
+  'Action needed': 'bg-amber-50 text-[#B45309] border-amber-200',
+  'Not accepted': 'bg-red-50 text-[#B91C1C] border-red-200',
+  'Not required': 'bg-slate-50 text-slate-600 border-slate-200',
+};
+
+const VENDOR_FALLBACK_TITLE = {
+  Approved: 'Verification complete',
+  Pending: 'Action required',
+  Rejected: 'Application not approved',
+};
+
+function Stamp({ banner, date }) {
+  return (
+    <div
+      className={`vg-stamp shrink-0 self-start border-[3px] ${banner.ring} ${banner.text} rounded-[10px] px-4 py-2 text-center bg-white/60`}
+      aria-label={`Status: ${banner.title}`}
+    >
+      <p className="text-xl font-bold tracking-[0.12em] leading-none">{banner.title.toUpperCase()}</p>
+      <p className="text-[10px] font-medium mt-1 opacity-80">{date ? new Date(date).toLocaleDateString() : ''} · VendorGate</p>
+    </div>
+  );
+}
+
+// What the VENDOR sees: status, a professional summary, what to do, and a simple status per document.
+function VendorView({ report, finalStatus, overridden }) {
+  const banner = BANNER[finalStatus];
+  const title = overridden ? VENDOR_FALLBACK_TITLE[finalStatus] : (report.vendor_title || VENDOR_FALLBACK_TITLE[finalStatus]);
+  let summary = report.vendor_summary || '';
+  if (overridden || !summary) {
+    summary = finalStatus === 'Approved'
+      ? 'Your application has been approved. No action is needed.'
+      : finalStatus === 'Rejected'
+        ? 'We are unable to approve this application.'
+        : 'Your application needs attention before it can be approved.';
+  }
+  const items = Array.isArray(report.vendor_items)
+    ? report.vendor_items
+    : (report.vendor_actions || []).map((a) => ({ title: '', message: a }));
+  const showItems = finalStatus !== 'Approved' && items.length > 0 && title !== 'Under review';
+
+  return (
+    <div className="space-y-5">
+      <div className={`border rounded-[14px] p-5 sm:p-6 ${banner.bg}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          <Stamp banner={banner} date={report.evaluated_at} />
+          <div className="space-y-1.5">
+            <p className={`font-semibold text-[15px] ${banner.text}`}>{title}</p>
+            <p className="text-sm text-slate-700 leading-relaxed">{summary}</p>
+          </div>
+        </div>
+      </div>
+
+      {showItems && (
+        <div className={`bg-white rounded-[12px] p-5 border ${finalStatus === 'Rejected' ? 'border-red-200' : 'border-amber-200'}`}>
+          <p className="font-semibold text-sm text-[#0E2A47] mb-3">
+            {finalStatus === 'Rejected' ? 'Reason' : 'What we need from you'}
+          </p>
+          <ol className="space-y-2.5 text-sm text-slate-700 list-decimal pl-5">
+            {items.map((it, i) => (
+              <li key={i}>
+                {it.title && <span className="font-semibold text-[#0E2A47]">{it.title}: </span>}
+                {it.message}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <p className="font-semibold text-sm text-[#0E2A47]">Documents</p>
+        {(report.documents || []).map((doc, i) => {
+          const label = doc.vendor_result || (doc.result === 'Pass' ? 'Verified' : doc.result === 'Fail' ? 'Not accepted' : doc.result === 'Not applicable' ? 'Not required' : 'Action needed');
+          return (
+            <div key={i} className="flex items-center justify-between gap-3 border border-slate-200 rounded-[12px] bg-white p-4">
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-[#0F766E] shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm text-[#0E2A47]">{doc.document}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{doc.vendor_remark || (label === 'Verified' ? 'Verified.' : '')}</p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border shrink-0 ${VENDOR_DOC_STYLE[label] || VENDOR_DOC_STYLE['Not required']}`}>
+                {label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function VerificationReport({ report, status, showVendorMessage = false, audience }) {
   const [copied, setCopied] = useState(false);
+  const isAdmin = (audience || (showVendorMessage ? 'admin' : 'vendor')) === 'admin';
 
   if (!report) {
     return (
       <div className="p-4 bg-slate-50 border border-slate-200 rounded-[10px] text-xs text-slate-600">
-        This application was submitted before the new AI verification engine. Use "Fix &amp; Resubmit" (vendor) to run the new checks.
+        {isAdmin
+          ? 'This application was submitted before the current verification engine. The vendor can use "Fix & resubmit" to run the latest checks.'
+          : 'Your application is being reviewed. Use "Fix & resubmit" below to update it if needed.'}
       </div>
     );
   }
 
   // Banner follows the final status (admin may have overridden the AI)
   const finalStatus = normalizeStatus(status || report.decision);
+  const overridden = Boolean(status) && normalizeStatus(status) !== report.decision;
+
+  if (!isAdmin) {
+    return <VendorView report={report} finalStatus={finalStatus} overridden={overridden} />;
+  }
+
   const banner = BANNER[finalStatus];
-  const overridden = status && normalizeStatus(status) !== report.decision;
 
   const copyMessage = async () => {
     try {
@@ -147,50 +249,47 @@ export function VerificationReport({ report, status, showVendorMessage = false }
     }
   };
 
+  const adminItems = Array.isArray(report.vendor_items)
+    ? report.vendor_items.map((it) => `${it.title}: ${it.message}`)
+    : (report.vendor_actions || []);
+
   return (
     <div className="space-y-5">
-      {/* Decision stamp + summary */}
+      {/* Decision stamp + internal summary */}
       <div className={`border rounded-[14px] p-5 sm:p-6 ${banner.bg}`}>
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-          <div
-            className={`vg-stamp shrink-0 self-start border-[3px] ${banner.ring} ${banner.text} rounded-[10px] px-4 py-2 text-center bg-white/60`}
-            aria-label={`Decision: ${banner.title}`}
-          >
-            <p className="text-xl font-bold tracking-[0.12em] leading-none">{banner.title.toUpperCase()}</p>
-            <p className="text-[10px] font-medium mt-1 opacity-80">
-              {report.evaluated_at ? new Date(report.evaluated_at).toLocaleDateString() : ''} · VendorGate
-            </p>
-          </div>
+          <Stamp banner={banner} date={report.evaluated_at} />
           <div className="space-y-1.5">
-            <p className={`font-semibold text-[15px] ${banner.text}`}>{banner.line}</p>
+            <p className={`font-semibold text-[15px] ${banner.text}`}>AI recommendation: {report.decision}</p>
             {overridden && (
-              <p className="text-xs font-semibold text-slate-700">
-                Final decision by admin: {finalStatus}. The AI had recommended {report.decision}.
-              </p>
+              <p className="text-xs font-semibold text-slate-700">Final decision by admin: {finalStatus}.</p>
             )}
             <p className="text-sm text-slate-700 leading-relaxed">{report.summary}</p>
+            {report.risk && (
+              <p className="text-xs font-semibold text-[#B91C1C]">Risk flag: {report.risk}</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* What the vendor must do */}
-      {Array.isArray(report.vendor_actions) && report.vendor_actions.length > 0 && (
+      {/* What the vendor has been asked to do */}
+      {adminItems.length > 0 && (
         <div className="border border-amber-200 bg-white rounded-[12px] p-5">
-          <p className="font-semibold text-sm text-[#0E2A47] mb-3">What needs to be fixed</p>
+          <p className="font-semibold text-sm text-[#0E2A47] mb-3">Communicated to the vendor</p>
           <ol className="space-y-2 text-sm text-slate-700 list-decimal pl-5">
-            {report.vendor_actions.map((a, i) => <li key={i}>{a}</li>)}
+            {adminItems.map((a, i) => <li key={i}>{a}</li>)}
           </ol>
         </div>
       )}
 
-      {/* Per document */}
+      {/* Per document, full detail */}
       <div className="space-y-3">
-        <p className="font-semibold text-sm text-[#0E2A47]">Document by document</p>
+        <p className="font-semibold text-sm text-[#0E2A47]">Document by document (internal detail)</p>
         {(report.documents || []).map((doc, i) => <DocumentCard key={i} doc={doc} />)}
       </div>
 
       {/* Ready-to-send message */}
-      {showVendorMessage && report.vendor_message && (
+      {report.vendor_message && (
         <div className="border border-slate-200 rounded-[12px] p-5 bg-white">
           <div className="flex items-center justify-between mb-3">
             <p className="font-bold text-sm text-[#0E2A47]">Message to vendor (email-ready)</p>

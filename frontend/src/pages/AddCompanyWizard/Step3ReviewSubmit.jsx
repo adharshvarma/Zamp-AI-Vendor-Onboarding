@@ -86,7 +86,7 @@ export function Step3ReviewSubmit({ data, updateData, onSubmit, onBack, submitti
             disabled={!data.declarationAccepted || submitting} 
             onClick={handleSubmitClick}
           >
-            <CheckCircle2 className="w-4 h-4" /> {submitting ? 'AI is reading your documents (about 20 sec)...' : 'Submit Application'}
+            <CheckCircle2 className="w-4 h-4" /> {submitting ? 'Verifying your documents (about 20 sec)...' : 'Submit Application'}
           </Button>
         </div>
       </div>
