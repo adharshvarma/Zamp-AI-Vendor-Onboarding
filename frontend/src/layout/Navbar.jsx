@@ -14,16 +14,16 @@ export function Navbar({ currentUser, onLogout, onLogoClick }) {
           className="flex items-center space-x-3 cursor-pointer group" 
           onClick={onLogoClick}
         >
-          <div className="w-9 h-9 bg-[#173B63] text-white rounded-[10px] flex items-center justify-center font-bold text-xl group-hover:bg-[#2563EB] transition-colors">
+          <div className="w-9 h-9 bg-[#0E2A47] text-white rounded-[10px] flex items-center justify-center font-bold text-xl group-hover:bg-[#0F766E] transition-colors">
             C
           </div>
-          <span className="text-xl font-extrabold text-[#173B63] tracking-tight">VendorGate</span>
+          <span className="text-xl font-extrabold text-[#0E2A47] tracking-tight">VendorGate</span>
         </div>
 
         {currentUser && (
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm font-medium text-[#1E293B]">
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[#173B63]">
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[#0E2A47]">
                 <UserIcon className="w-4 h-4" />
               </div>
               <span className="hidden sm:inline font-semibold">{displayName}</span>

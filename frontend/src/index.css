@@ -21,8 +21,15 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'IBM Plex Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background-color: var(--color-bg-main);
   color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;
 }
+
+/* VendorGate v3 look */
+.font-mono, code, pre.font-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+:focus-visible { outline: 2px solid #0F766E; outline-offset: 2px; }
+@keyframes vg-stamp { 0% { transform: rotate(-6deg) scale(1.35); opacity: 0; } 100% { transform: rotate(-6deg) scale(1); opacity: 1; } }
+.vg-stamp { animation: vg-stamp 420ms cubic-bezier(.2,.9,.3,1.2) both; transform: rotate(-6deg); }
+@media (prefers-reduced-motion: reduce) { .vg-stamp { animation: none; } }

@@ -13,7 +13,7 @@ function Row({ label, value, mono = false }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-100 pb-2 last:border-0">
       <span className="text-slate-500 font-medium">{label}</span>
-      <span className={`font-semibold text-[#173B63] text-right ${mono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
+      <span className={`font-semibold text-[#0E2A47] text-right ${mono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
     </div>
   );
 }
@@ -36,7 +36,7 @@ function FilePick({ label, file, onPick }) {
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
         <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
-          <Upload className="w-4 h-4 text-[#2563EB]" />
+          <Upload className="w-4 h-4 text-[#0F766E]" />
           <span>{file ? file.name : 'Keep current file (click to replace)'}</span>
         </div>
       </div>
@@ -156,7 +156,7 @@ export function CompanyDetailsPage({ company, onBack }) {
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold text-[#173B63]">{comp.company_name}</h1>
+        <h1 className="text-2xl font-bold text-[#0E2A47]">{comp.company_name}</h1>
         <p className="text-xs text-slate-500">
           Vendor ID {comp.vendor_id} · {comp.entity_type} · Submitted {comp.submitted_at ? new Date(comp.submitted_at).toLocaleDateString() : 'N/A'}
         </p>
@@ -202,7 +202,7 @@ export function CompanyDetailsPage({ company, onBack }) {
           <ol className="space-y-3 text-xs">
             {comp.activity.map((a, i) => (
               <li key={i} className="flex gap-3">
-                <span className="w-2 h-2 mt-1.5 rounded-full bg-[#2563EB] shrink-0" />
+                <span className="w-2 h-2 mt-1.5 rounded-full bg-[#0F766E] shrink-0" />
                 <div>
                   <p className="font-semibold text-[#1E293B]">{a.action}</p>
                   {a.remark && <p className="text-slate-600">{a.remark}</p>}
@@ -219,8 +219,8 @@ export function CompanyDetailsPage({ company, onBack }) {
           {comp.documents && comp.documents.length > 0 ? (
             comp.documents.map((doc, idx) => (
               <div key={idx} className="p-3 bg-slate-50 rounded-[10px] border border-slate-200 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#2563EB]" />
-                <span className="font-semibold text-[#173B63]">{doc.doc_type}</span>
+                <FileText className="w-4 h-4 text-[#0F766E]" />
+                <span className="font-semibold text-[#0E2A47]">{doc.doc_type}</span>
               </div>
             ))
           ) : (
@@ -228,6 +228,11 @@ export function CompanyDetailsPage({ company, onBack }) {
           )}
         </div>
       </Card>
+      <div className="flex justify-center pt-2 pb-6">
+        <Button variant="primary" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4" /> Back to dashboard
+        </Button>
+      </div>
     </div>
   );
 }

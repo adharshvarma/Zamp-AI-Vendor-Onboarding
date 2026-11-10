@@ -47,10 +47,13 @@ const EMPTY_WIZARD = {
 const WIZARD_STEPS = ['Company & Contact', 'Documents & Bank', 'Review & Submit'];
 
 export default function App() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const { selectedCompany, setSelectedCompany } = useCompany();
 
-  const [currentRoute, setCurrentRoute] = useState('dashboard');
+  // Start on the right home page for the signed-in role (admin vs vendor)
+  const [currentRoute, setCurrentRoute] = useState(() =>
+    sessionStorage.getItem('user_role') === 'admin' ? 'admin-dashboard' : 'dashboard'
+  );
   const [wizardStep, setWizardStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [lastResult, setLastResult] = useState(null);
@@ -59,7 +62,7 @@ export default function App() {
   const updateWizardData = (fields) => setWizardData((prev) => ({ ...prev, ...fields }));
 
   const handleSignInSuccess = () => {
-    const role = localStorage.getItem('user_role');
+    const role = sessionStorage.getItem('user_role');
     setCurrentRoute(role === 'admin' ? 'admin-dashboard' : 'dashboard');
   };
 
@@ -113,13 +116,21 @@ export default function App() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#F4F6F8] flex items-center justify-center text-sm text-slate-500">
+        Loading VendorGate...
+      </div>
+    );
+  }
+
   // Public unauthenticated views
   if (!user) {
     if (currentRoute === 'register') {
-      return <RegisterPage onRegisterSuccess={handleRegisterSuccess} onNavigateToSignIn={() => setCurrentRoute('signin')} />;
+      return <RegisterPage onRegisterSuccess={handleRegisterSuccess} onNavigateToSignIn={() => setCurrentRoute('signin')} onHome={() => setCurrentRoute('landing')} />;
     }
     if (currentRoute === 'signin') {
-      return <SignInPage onSignInSuccess={handleSignInSuccess} onNavigateToRegister={() => setCurrentRoute('register')} />;
+      return <SignInPage onSignInSuccess={handleSignInSuccess} onNavigateToRegister={() => setCurrentRoute('register')} onHome={() => setCurrentRoute('landing')} />;
     }
     return <LandingPage onNavigate={setCurrentRoute} />;
   }
@@ -127,10 +138,11 @@ export default function App() {
   return (
     <DashboardLayout
       currentUser={user}
-      role={localStorage.getItem('user_role')}
+      role={sessionStorage.getItem('user_role')}
       onLogout={() => { logout(); setCurrentRoute('landing'); }}
       activeNav={currentRoute}
       setActiveNav={setCurrentRoute}
+      onAddCompany={startNewApplication}
     >
       {/* Vendor Dashboard */}
       {currentRoute === 'dashboard' && (
@@ -156,11 +168,11 @@ export default function App() {
                 <React.Fragment key={label}>
                   <div className="flex items-center gap-2">
                     <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
-                      done ? 'bg-[#16A34A] text-white' : active ? 'bg-[#173B63] text-white' : 'bg-slate-200 text-slate-500'
+                      done ? 'bg-[#16A34A] text-white' : active ? 'bg-[#0E2A47] text-white' : 'bg-slate-200 text-slate-500'
                     }`}>
                       {done ? '✓' : n}
                     </span>
-                    <span className={`text-xs font-semibold hidden sm:inline ${active ? 'text-[#173B63]' : 'text-slate-500'}`}>{label}</span>
+                    <span className={`text-xs font-semibold hidden sm:inline ${active ? 'text-[#0E2A47]' : 'text-slate-500'}`}>{label}</span>
                   </div>
                   {n < WIZARD_STEPS.length && <div className="flex-1 h-px bg-slate-200" />}
                 </React.Fragment>
@@ -201,23 +213,31 @@ export default function App() {
         <div className="max-w-4xl mx-auto space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl font-bold text-[#173B63]">Verification Result</h2>
+              <h2 className="text-2xl font-bold text-[#0E2A47]">Verification Result</h2>
               <p className="text-xs text-[#64748B]">
                 Application {lastResult.application_id} · Vendor ID {lastResult.vendor_id}
               </p>
             </div>
             <button
               onClick={() => setCurrentRoute('dashboard')}
-              className="bg-[#173B63] text-white px-5 py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#112d4e]"
+              className="bg-[#0E2A47] text-white px-5 py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#0A1F36]"
             >
               Back to Dashboard
             </button>
           </div>
           <VerificationReport report={lastResult.report} status={lastResult.status} />
           <p className="text-xs text-slate-500">
-            You can see this result anytime from your dashboard → View Details. If something needs fixing, use "Fix &amp; Resubmit" there.
+            You can see this result anytime from your dashboard (View details). If something needs fixing, use "Fix &amp; resubmit" there.
             Final approval is confirmed by the procurement team.
           </p>
+          <div className="flex justify-center pt-2 pb-6">
+            <button
+              onClick={() => setCurrentRoute('dashboard')}
+              className="bg-[#0E2A47] text-white px-6 py-2.5 rounded-[10px] text-sm font-medium hover:bg-[#0A1F36]"
+            >
+              Back to dashboard
+            </button>
+          </div>
         </div>
       )}
 

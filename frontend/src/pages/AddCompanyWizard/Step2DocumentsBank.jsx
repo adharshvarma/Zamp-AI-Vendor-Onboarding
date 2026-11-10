@@ -36,7 +36,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
         
         {/* PAN Information */}
         <div className="space-y-3">
-          <h4 className="text-sm font-bold text-[#173B63]">PAN Card Details</h4>
+          <h4 className="text-sm font-bold text-[#0E2A47]">PAN Card Details</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input 
               label="PAN Number" 
@@ -58,7 +58,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                 />
                 <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
-                  <Upload className="w-4 h-4 text-[#2563EB]" />
+                  <Upload className="w-4 h-4 text-[#0F766E]" />
                   <span>{data.panFile ? data.panFile.name : "Choose file or drag & drop"}</span>
                 </div>
               </div>
@@ -70,7 +70,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
 
         {/* GST Details */}
         <div className="space-y-3">
-          <h4 className="text-sm font-bold text-[#173B63]">GST Registration</h4>
+          <h4 className="text-sm font-bold text-[#0E2A47]">GST Registration</h4>
           <label className="block text-xs font-semibold text-[#1E293B]">Is your business registered under GST? <span className="text-[#DC2626]">*</span></label>
           <div className="flex gap-6">
             <label className="flex items-center gap-2 text-sm text-[#1E293B] cursor-pointer">
@@ -80,7 +80,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                 value="Yes" 
                 checked={data.gstRegistered === 'Yes'} 
                 onChange={() => updateData({ gstRegistered: 'Yes' })} 
-                className="text-[#2563EB]"
+                className="text-[#0F766E]"
               /> Yes
             </label>
             <label className="flex items-center gap-2 text-sm text-[#1E293B] cursor-pointer">
@@ -90,7 +90,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                 value="No" 
                 checked={data.gstRegistered === 'No'} 
                 onChange={() => updateData({ gstRegistered: 'No' })} 
-                className="text-[#2563EB]"
+                className="text-[#0F766E]"
               /> No
             </label>
           </div>
@@ -117,7 +117,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
                   />
                   <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
-                    <Upload className="w-4 h-4 text-[#2563EB]" />
+                    <Upload className="w-4 h-4 text-[#0F766E]" />
                     <span>{data.gstFile ? data.gstFile.name : "Choose GST certificate"}</span>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
 
         {/* Bank Account Details */}
         <div className="space-y-3">
-          <h4 className="text-sm font-bold text-[#173B63]">Bank Details for Payments</h4>
+          <h4 className="text-sm font-bold text-[#0E2A47]">Bank Details for Payments</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input 
               label="Account Holder Name" 
@@ -178,7 +178,7 @@ export function Step2DocumentsBank({ data, updateData, onNext, onBack }) {
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
               />
               <div className="flex items-center justify-center gap-2 text-xs text-[#64748B]">
-                <Upload className="w-4 h-4 text-[#2563EB]" />
+                <Upload className="w-4 h-4 text-[#0F766E]" />
                 <span>{data.bankFile ? data.bankFile.name : "Choose bank proof document"}</span>
               </div>
             </div>

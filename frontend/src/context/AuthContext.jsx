@@ -11,7 +11,14 @@ export function AuthProvider({ children }) {
 
   // Fetch user profile on initial load if token exists
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
+    // Old versions kept you logged in forever in localStorage. Clear that once.
+    try {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_role');
+    } catch {
+      // ignore
+    }
+    const token = sessionStorage.getItem('access_token');
     if (token) {
       fetchUserProfile();
     } else {
@@ -39,8 +46,8 @@ export function AuthProvider({ children }) {
     const response = await API.post('/api/auth/login', { email, password });
     const { access_token, role } = response.data;
     
-    localStorage.setItem('access_token', access_token);
-    localStorage.setItem('user_role', role);
+    sessionStorage.setItem('access_token', access_token);
+    sessionStorage.setItem('user_role', role);
     
     // Fetch profile immediately after login
     await fetchUserProfile();
@@ -48,8 +55,8 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('user_role');
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('user_role');
     setUser(null);
   };
 

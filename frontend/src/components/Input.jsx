@@ -29,7 +29,7 @@ export function Input({
         disabled={disabled}
         required={required}
         className={`w-full border rounded-[10px] p-2.5 text-sm bg-white text-[#1E293B] placeholder:text-[#64748B] focus:outline-none focus:ring-1 transition-all ${
-          error ? 'border-[#DC2626] focus:ring-[#DC2626]' : 'border-slate-300 focus:border-[#2563EB] focus:ring-[#2563EB]'
+          error ? 'border-[#DC2626] focus:ring-[#DC2626]' : 'border-slate-300 focus:border-[#0F766E] focus:ring-[#0F766E]'
         } ${disabled ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`}
         {...props}
       />

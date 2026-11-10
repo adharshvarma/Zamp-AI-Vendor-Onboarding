@@ -1,57 +1,129 @@
 // File path: frontend/src/pages/LandingPage.jsx
 
 import React from 'react';
-import { ShieldCheck, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, FileText, Landmark, Receipt } from 'lucide-react';
 import { Button } from '../components/Button';
+import { BrandMark } from '../layout/DashboardLayout';
+
+// The core idea of the product, shown instead of described:
+// the PAN is hidden inside every GSTIN, and every document must point to the same company.
+function CrossCheckSpecimen() {
+  return (
+    <div className="bg-white border border-[#DCE3EA] rounded-[18px] p-6 sm:p-7 relative">
+      <p className="text-sm font-semibold text-[#0E2A47] mb-5">One submission, cross-checked</p>
+
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
+          <div>
+            <p className="text-xs text-slate-500">PAN card</p>
+            <p className="font-mono text-[15px] text-[#0E2A47]">
+              <mark className="bg-[#CCFBF1] text-[#0F766E] rounded px-1">AABCT1234K</mark>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <Receipt className="w-5 h-5 text-slate-400 mt-0.5" />
+          <div>
+            <p className="text-xs text-slate-500">GST certificate</p>
+            <p className="font-mono text-[15px] text-[#0E2A47]">
+              33<mark className="bg-[#CCFBF1] text-[#0F766E] rounded px-1 mx-0.5">AABCT1234K</mark>1Z5
+            </p>
+            <p className="text-xs text-slate-500 mt-1">The PAN is built into every GSTIN. If they differ, the documents belong to different businesses.</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <Landmark className="w-5 h-5 text-slate-400 mt-0.5" />
+          <div>
+            <p className="text-xs text-slate-500">Cancelled cheque</p>
+            <p className="text-[15px] text-[#0E2A47]">Zamp Technologies Private Limited</p>
+            <p className="text-xs text-slate-500 mt-1">The bank account must be in the same company's name.</p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="vg-stamp absolute -top-4 right-5 sm:right-7 border-[3px] border-[#15803D] text-[#15803D] bg-white rounded-[10px] px-3 py-1.5"
+        aria-hidden="true"
+      >
+        <p className="text-base font-bold tracking-[0.12em] leading-none">APPROVED</p>
+      </div>
+    </div>
+  );
+}
+
+const OUTCOMES = [
+  {
+    Icon: CheckCircle2,
+    color: 'text-[#15803D]',
+    title: 'Approved',
+    text: 'The form matches every document, and all documents belong to the same company.',
+  },
+  {
+    Icon: Clock,
+    color: 'text-[#B45309]',
+    title: 'Pending',
+    text: 'Something is fixable: a typing mistake, a missing or blurry document, a name that only partly matches. The vendor is told exactly what to fix.',
+  },
+  {
+    Icon: XCircle,
+    color: 'text-[#B91C1C]',
+    title: 'Rejected',
+    text: "The documents contradict each other: another business's PAN, or a bank account in someone else's name. A common sign of fraud.",
+  },
+];
 
 export function LandingPage({ onNavigate }) {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-[#173B63] text-white rounded-[10px] flex items-center justify-center font-bold text-xl">
-              C
-            </div>
-            <span className="text-xl font-extrabold text-[#173B63] tracking-tight">VendorGate</span>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => onNavigate('signin')}>Sign In</Button>
-            <Button variant="primary" onClick={() => onNavigate('register')}>Register</Button>
-          </div>
+    <div className="min-h-screen bg-[#F4F6F8] flex flex-col">
+      <header className="max-w-6xl w-full mx-auto px-5 sm:px-8 h-20 flex items-center justify-between">
+        <BrandMark />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => onNavigate('signin')}>Sign in</Button>
+          <Button variant="primary" onClick={() => onNavigate('register')}>Register</Button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-20 text-center my-auto">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 text-[#2563EB] text-xs font-semibold mb-6">
-          <ShieldCheck className="w-4 h-4" /> AI-Powered Vendor Onboarding Platform
-        </div>
-        <h1 className="text-4xl sm:text-6xl font-extrabold text-[#173B63] mb-4 tracking-tight">
-          VendorGate
-        </h1>
-        <p className="text-xl font-semibold text-[#2563EB] mb-6">
-          Simplifying Vendor Registration and Verification.
-        </p>
-        <p className="text-[#64748B] max-w-2xl mx-auto mb-10 text-base leading-relaxed">
-          Automated document extraction, seamless Indian PIN code auto-fill, and streamlined compliance verification for companies across India.
-        </p>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-5 sm:px-8">
+        <section className="grid lg:grid-cols-2 gap-12 items-center py-10 sm:py-16">
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-bold text-[#0E2A47] leading-[1.1] tracking-tight">
+              Check every vendor before the first payment.
+            </h1>
+            <p className="text-base sm:text-lg text-slate-600 mt-5 leading-relaxed max-w-[34rem]">
+              Vendors upload their PAN card, GST certificate and cancelled cheque. AI reads each document,
+              cross-checks it against the form and the other documents, and gives a clear decision with the reason.
+            </p>
+            <div className="flex flex-wrap gap-3 mt-8">
+              <Button variant="secondary" onClick={() => onNavigate('register')}>Register as a vendor</Button>
+              <Button variant="outline" onClick={() => onNavigate('signin')}>Sign in (vendors and admins)</Button>
+            </div>
+          </div>
+          <CrossCheckSpecimen />
+        </section>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-          <Button variant="primary" fullWidth onClick={() => onNavigate('register')}>
-            Vendor Registration <ArrowRight className="w-4 h-4" />
-          </Button>
-          <Button variant="secondary" fullWidth onClick={() => onNavigate('signin')}>
-            Vendor Sign In
-          </Button>
-          {/* Changed 'admin-login' to 'signin' since admins use the same sign-in route with admin credentials */}
-          <Button variant="outline" fullWidth onClick={() => onNavigate('signin')}>
-            Admin Login
-          </Button>
-        </div>
+        <section className="py-10 border-t border-[#DCE3EA]">
+          <h2 className="text-xl font-semibold text-[#0E2A47] mb-6">How each application is decided</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {OUTCOMES.map(({ Icon, color, title, text }) => (
+              <div key={title}>
+                <div className={`flex items-center gap-2 font-semibold ${color}`}>
+                  <Icon className="w-5 h-5" /> {title}
+                </div>
+                <p className="text-sm text-slate-600 mt-2 leading-relaxed">{text}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-sm text-slate-500 mt-8 max-w-3xl">
+            The procurement team always has the final say. Every decision, AI or human, is kept in an audit trail.
+          </p>
+        </section>
       </main>
 
-      <footer className="text-center py-6 text-xs text-[#64748B] border-t border-slate-200 bg-white">
-        VendorGate Verification Platform © 2026. All rights reserved.
+      <footer className="text-center py-6 text-xs text-slate-500">
+        VendorGate · Vendor onboarding and verification · © 2026
       </footer>
     </div>
   );

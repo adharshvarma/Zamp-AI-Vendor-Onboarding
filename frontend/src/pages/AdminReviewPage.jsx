@@ -12,7 +12,7 @@ function Row({ label, value, mono = false }) {
   return (
     <div className="flex justify-between gap-4 border-b border-slate-100 pb-2 last:border-0">
       <span className="text-slate-500 font-medium">{label}</span>
-      <span className={`font-semibold text-[#173B63] text-right ${mono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
+      <span className={`font-semibold text-[#0E2A47] text-right ${mono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
     </div>
   );
 }
@@ -86,7 +86,7 @@ export function AdminReviewPage({ companyId, onBack }) {
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold text-[#173B63]">{app.company_name}</h1>
+        <h1 className="text-2xl font-bold text-[#0E2A47]">{app.company_name}</h1>
         <p className="text-xs text-slate-500">
           {app.application_id} · {app.vendor_id} · {app.entity_type} · Submitted {app.submitted_at ? new Date(app.submitted_at).toLocaleString() : 'N/A'}
         </p>
@@ -112,7 +112,7 @@ export function AdminReviewPage({ companyId, onBack }) {
               <textarea
                 value={remark}
                 onChange={(e) => setRemark(e.target.value)}
-                className="w-full border border-slate-300 rounded-[10px] p-3 text-xs focus:outline-none focus:border-[#2563EB]"
+                className="w-full border border-slate-300 rounded-[10px] p-3 text-xs focus:outline-none focus:border-[#0F766E]"
                 rows={3}
                 placeholder="Remark (required if you differ from the AI)..."
               />
@@ -165,7 +165,7 @@ export function AdminReviewPage({ companyId, onBack }) {
               <ol className="space-y-3 text-xs">
                 {app.activity.map((a, i) => (
                   <li key={i} className="flex gap-3">
-                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#2563EB] shrink-0" />
+                    <span className="w-2 h-2 mt-1.5 rounded-full bg-[#0F766E] shrink-0" />
                     <div>
                       <p className="font-semibold text-[#1E293B]">{a.action}</p>
                       {a.remark && <p className="text-slate-600">{a.remark}</p>}
@@ -177,6 +177,12 @@ export function AdminReviewPage({ companyId, onBack }) {
             </Card>
           )}
         </div>
+      </div>
+
+      <div className="flex justify-center pt-2 pb-6">
+        <Button variant="primary" onClick={onBack}>
+          <ArrowLeft className="w-4 h-4" /> Back to dashboard
+        </Button>
       </div>
     </div>
   );

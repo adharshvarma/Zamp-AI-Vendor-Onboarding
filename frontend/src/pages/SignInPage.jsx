@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
+import { BrandMark } from '../layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 
-export function SignInPage({ onSignInSuccess, onNavigateToRegister }) {
+export function SignInPage({ onSignInSuccess, onNavigateToRegister, onHome }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,10 +33,15 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#F4F6F8] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full mx-auto">
+        <div className="flex justify-center mb-8">
+          <button type="button" onClick={onHome} title="Back to home">
+            <BrandMark />
+          </button>
+        </div>
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-extrabold text-[#173B63]">Sign In to VendorGate</h2>
+          <h2 className="text-2xl font-extrabold text-[#0E2A47]">Sign In to VendorGate</h2>
           <p className="text-xs text-[#64748B] mt-1">Manage your multi-company vendor profile and compliance status.</p>
         </div>
 
@@ -64,7 +70,7 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister }) {
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)} 
-                className="absolute right-3 top-8 text-xs font-semibold text-[#64748B] hover:text-[#173B63]"
+                className="absolute right-3 top-8 text-xs font-semibold text-[#64748B] hover:text-[#0E2A47]"
               >
                 {showPassword ? 'Hide' : 'Show'}
               </button>
@@ -79,7 +85,7 @@ export function SignInPage({ onSignInSuccess, onNavigateToRegister }) {
 
           <div className="mt-6 text-center text-xs text-[#64748B]">
             Don't have an account?{' '}
-            <button onClick={onNavigateToRegister} className="text-[#2563EB] font-semibold hover:underline">
+            <button onClick={onNavigateToRegister} className="text-[#0F766E] font-semibold hover:underline">
               Create Account
             </button>
           </div>

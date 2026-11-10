@@ -66,7 +66,7 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
             <select 
               value={data.entityType} 
               onChange={(e) => updateData({ entityType: e.target.value })} 
-              className="w-full border border-slate-300 rounded-[10px] p-2.5 text-sm bg-white text-[#1E293B] focus:outline-none focus:border-[#2563EB]"
+              className="w-full border border-slate-300 rounded-[10px] p-2.5 text-sm bg-white text-[#1E293B] focus:outline-none focus:border-[#0F766E]"
             >
               <option>Sole Proprietorship</option>
               <option>Partnership</option>
@@ -100,8 +100,8 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
 
         <hr className="border-slate-100 my-2" />
 
-        <div className="flex items-center gap-1.5 text-sm font-bold text-[#173B63]">
-          <UserCheck className="w-4 h-4 text-[#2563EB]" /> Authorised Contact Person (filling this form)
+        <div className="flex items-center gap-1.5 text-sm font-bold text-[#0E2A47]">
+          <UserCheck className="w-4 h-4 text-[#0F766E]" /> Authorised Contact Person (filling this form)
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -119,7 +119,7 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
             <select 
               value={data.designation || ''} 
               onChange={(e) => updateData({ designation: e.target.value })} 
-              className="w-full border border-slate-300 rounded-[10px] p-2.5 text-sm bg-white text-[#1E293B] focus:outline-none focus:border-[#2563EB]"
+              className="w-full border border-slate-300 rounded-[10px] p-2.5 text-sm bg-white text-[#1E293B] focus:outline-none focus:border-[#0F766E]"
             >
               <option value="">Select designation</option>
               <option>Proprietor / Owner</option>
@@ -138,8 +138,8 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
 
         <hr className="border-slate-100 my-2" />
 
-        <div className="flex items-center gap-1.5 text-sm font-bold text-[#173B63]">
-          <MapPin className="w-4 h-4 text-[#2563EB]" /> Pin Code & Postal Lookup
+        <div className="flex items-center gap-1.5 text-sm font-bold text-[#0E2A47]">
+          <MapPin className="w-4 h-4 text-[#0F766E]" /> Pin Code & Postal Lookup
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -154,7 +154,7 @@ export function Step1CompanyDetails({ data, updateData, onNext, onCancel }) {
               placeholder="6-digit PIN" 
               error={error}
             />
-            {loading && <p className="text-[11px] text-[#2563EB] mt-1">Fetching postal records...</p>}
+            {loading && <p className="text-[11px] text-[#0F766E] mt-1">Fetching postal records...</p>}
           </div>
           <Input 
             label="State" 

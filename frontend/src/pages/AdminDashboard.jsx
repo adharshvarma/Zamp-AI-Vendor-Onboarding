@@ -20,14 +20,14 @@ function KpiCard({ label, value, sub, Icon, textClass, active, onClick }) {
       type="button"
       onClick={onClick}
       className={`text-left bg-white border rounded-[12px] p-5 shadow-sm transition-all hover:shadow-md ${
-        active ? 'border-[#173B63] ring-1 ring-[#173B63]' : 'border-slate-200'
+        active ? 'border-[#0E2A47] ring-1 ring-[#0E2A47]' : 'border-slate-200'
       }`}
     >
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-bold text-[#64748B] uppercase tracking-wide">{label}</p>
         <Icon className={`w-4 h-4 ${textClass}`} />
       </div>
-      <p className="text-3xl font-extrabold text-[#173B63] mt-2">{value}</p>
+      <p className="text-3xl font-extrabold text-[#0E2A47] mt-2">{value}</p>
       <p className="text-xs text-slate-500 mt-1">{sub}</p>
     </button>
   );
@@ -88,7 +88,7 @@ function TopIssues({ companies }) {
             <span className="text-slate-500 font-semibold">{n}</span>
           </div>
           <div className="h-1.5 bg-slate-100 rounded-full">
-            <div className="h-1.5 rounded-full bg-[#173B63]" style={{ width: `${(n / max) * 100}%` }} />
+            <div className="h-1.5 rounded-full bg-[#0E2A47]" style={{ width: `${(n / max) * 100}%` }} />
           </div>
         </li>
       ))}
@@ -141,7 +141,7 @@ export function AdminDashboard({ onReviewApplication }) {
     <div className="space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#173B63]">Vendor Onboarding Dashboard</h1>
+          <h1 className="text-2xl font-bold text-[#0E2A47]">Vendor Onboarding Dashboard</h1>
           <p className="text-xs text-[#64748B]">AI verifies every submission. You review the reasons and give the final decision.</p>
         </div>
         <Button variant="outline" onClick={fetchAdminApps} title="Refresh">
@@ -153,7 +153,7 @@ export function AdminDashboard({ onReviewApplication }) {
 
       {/* KPI cards (click to filter) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Total Applications" value={total} sub="All time" Icon={Building2} textClass="text-[#173B63]"
+        <KpiCard label="Total Applications" value={total} sub="All time" Icon={Building2} textClass="text-[#0E2A47]"
           active={statusFilter === 'All'} onClick={() => setStatusFilter('All')} />
         <KpiCard label="Approved" value={counts.Approved} sub={`${total ? Math.round((counts.Approved / total) * 100) : 0}% of total`}
           Icon={CheckCircle2} textClass="text-[#15803D]" active={statusFilter === 'Approved'} onClick={() => setStatusFilter('Approved')} />
@@ -184,7 +184,7 @@ export function AdminDashboard({ onReviewApplication }) {
               placeholder="Search company, contact, Vendor ID, App ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-[10px] text-xs focus:outline-none focus:border-[#2563EB]"
+              className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-[10px] text-xs focus:outline-none focus:border-[#0F766E]"
             />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -223,7 +223,7 @@ export function AdminDashboard({ onReviewApplication }) {
                 filteredCompanies.map((company) => (
                   <tr key={company.id} className="hover:bg-slate-50/80 align-top">
                     <td className="py-4 px-5">
-                      <p className="font-semibold text-[#173B63]">{company.companyName}</p>
+                      <p className="font-semibold text-[#0E2A47]">{company.companyName}</p>
                       <p className="text-[#64748B] font-mono text-[11px]">{company.vendorId} · {company.applicationId}</p>
                     </td>
                     <td className="py-4 px-5 text-[#1E293B]">

@@ -10,7 +10,7 @@ const CHECK_STYLE = {
   pass: { Icon: CheckCircle2, color: 'text-[#15803D]', label: 'Pass' },
   warn: { Icon: AlertTriangle, color: 'text-[#B45309]', label: 'Needs fix' },
   fail: { Icon: XCircle, color: 'text-[#B91C1C]', label: 'Fail' },
-  info: { Icon: Info, color: 'text-[#2563EB]', label: 'Note' },
+  info: { Icon: Info, color: 'text-[#0F766E]', label: 'Note' },
 };
 
 const DOC_RESULT_STYLE = {
@@ -21,9 +21,9 @@ const DOC_RESULT_STYLE = {
 };
 
 const BANNER = {
-  Approved: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-[#15803D]', Icon: CheckCircle2, title: 'Approved by AI verification' },
-  Pending: { bg: 'bg-amber-50 border-amber-200', text: 'text-[#B45309]', Icon: AlertTriangle, title: 'Pending — action needed' },
-  Rejected: { bg: 'bg-red-50 border-red-200', text: 'text-[#B91C1C]', Icon: XCircle, title: 'Rejected — conflicts found' },
+  Approved: { bg: 'bg-[#F0FAF4] border-[#BFE5CD]', text: 'text-[#15803D]', ring: 'border-[#15803D]', Icon: CheckCircle2, title: 'Approved', line: 'All documents match and belong to the same company.' },
+  Pending: { bg: 'bg-[#FFF8EB] border-[#F3D9A6]', text: 'text-[#B45309]', ring: 'border-[#B45309]', Icon: AlertTriangle, title: 'Pending', line: 'Some details need to be fixed by the vendor.' },
+  Rejected: { bg: 'bg-[#FEF2F2] border-[#F5C2C2]', text: 'text-[#B91C1C]', ring: 'border-[#B91C1C]', Icon: XCircle, title: 'Rejected', line: 'The documents belong to different parties.' },
 };
 
 const FIELD_LABELS = {
@@ -45,6 +45,8 @@ const FIELD_LABELS = {
   is_cancelled: 'Marked cancelled',
 };
 
+const ID_FIELDS = new Set(['pan_number', 'gstin', 'account_number', 'ifsc']);
+
 function formatValue(v) {
   if (v === true) return 'Yes';
   if (v === false) return 'No';
@@ -63,9 +65,9 @@ function DocumentCard({ doc }) {
         className="w-full flex items-center justify-between p-4 hover:bg-slate-50 text-left"
       >
         <div className="flex items-center gap-3">
-          <FileText className="w-5 h-5 text-[#2563EB]" />
+          <FileText className="w-5 h-5 text-[#0F766E]" />
           <div>
-            <p className="font-semibold text-sm text-[#173B63]">{doc.document}</p>
+            <p className="font-semibold text-sm text-[#0E2A47]">{doc.document}</p>
             <p className="text-xs text-slate-500 mt-0.5">{doc.remarks}</p>
           </div>
         </div>
@@ -81,12 +83,12 @@ function DocumentCard({ doc }) {
         <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50/50">
           {extracted && Object.keys(extracted).length > 0 && (
             <div>
-              <p className="text-[11px] font-bold uppercase text-slate-500 mb-2">What the AI read on the document</p>
+              <p className="text-xs font-semibold text-slate-500 mb-2">What the AI read on the document</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
                 {Object.entries(extracted).map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-3 border-b border-slate-100 pb-1">
                     <span className="text-slate-500">{FIELD_LABELS[k] || k}</span>
-                    <span className="font-mono text-[#1E293B] text-right break-all">{formatValue(v)}</span>
+                    <span className={`text-[#1E293B] text-right break-words ${ID_FIELDS.has(k) ? 'font-mono' : 'font-medium'}`}>{formatValue(v)}</span>
                   </div>
                 ))}
               </div>
@@ -94,7 +96,7 @@ function DocumentCard({ doc }) {
           )}
           {Array.isArray(doc.checks) && doc.checks.length > 0 && (
             <div>
-              <p className="text-[11px] font-bold uppercase text-slate-500 mb-2">Checks performed</p>
+              <p className="text-xs font-semibold text-slate-500 mb-2">Checks performed</p>
               <ul className="space-y-2">
                 {doc.checks.map((c, i) => {
                   const st = CHECK_STYLE[c.status] || CHECK_STYLE.info;
@@ -134,7 +136,6 @@ export function VerificationReport({ report, status, showVendorMessage = false }
   const finalStatus = normalizeStatus(status || report.decision);
   const banner = BANNER[finalStatus];
   const overridden = status && normalizeStatus(status) !== report.decision;
-  const counts = report.counts || {};
 
   const copyMessage = async () => {
     try {
@@ -148,24 +149,26 @@ export function VerificationReport({ report, status, showVendorMessage = false }
 
   return (
     <div className="space-y-5">
-      {/* Decision banner */}
-      <div className={`border rounded-[12px] p-5 ${banner.bg}`}>
-        <div className="flex items-start gap-3">
-          <banner.Icon className={`w-6 h-6 shrink-0 ${banner.text}`} />
+      {/* Decision stamp + summary */}
+      <div className={`border rounded-[14px] p-5 sm:p-6 ${banner.bg}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+          <div
+            className={`vg-stamp shrink-0 self-start border-[3px] ${banner.ring} ${banner.text} rounded-[10px] px-4 py-2 text-center bg-white/60`}
+            aria-label={`Decision: ${banner.title}`}
+          >
+            <p className="text-xl font-bold tracking-[0.12em] leading-none">{banner.title.toUpperCase()}</p>
+            <p className="text-[10px] font-medium mt-1 opacity-80">
+              {report.evaluated_at ? new Date(report.evaluated_at).toLocaleDateString() : ''} · VendorGate
+            </p>
+          </div>
           <div className="space-y-1.5">
-            <p className={`font-bold text-base ${banner.text}`}>{banner.title}</p>
+            <p className={`font-semibold text-[15px] ${banner.text}`}>{banner.line}</p>
             {overridden && (
               <p className="text-xs font-semibold text-slate-700">
-                Final admin decision: {finalStatus} (AI recommended {report.decision})
+                Final decision by admin: {finalStatus}. The AI had recommended {report.decision}.
               </p>
             )}
             <p className="text-sm text-slate-700 leading-relaxed">{report.summary}</p>
-            <div className="flex flex-wrap gap-3 pt-1 text-xs font-semibold">
-              <span className="text-[#15803D]">✓ {counts.pass || 0} passed</span>
-              <span className="text-[#B45309]">! {counts.warn || 0} need fixing</span>
-              <span className="text-[#B91C1C]">✕ {counts.fail || 0} failed</span>
-              <span className="text-[#2563EB]">i {counts.info || 0} notes</span>
-            </div>
           </div>
         </div>
       </div>
@@ -173,7 +176,7 @@ export function VerificationReport({ report, status, showVendorMessage = false }
       {/* What the vendor must do */}
       {Array.isArray(report.vendor_actions) && report.vendor_actions.length > 0 && (
         <div className="border border-amber-200 bg-white rounded-[12px] p-5">
-          <p className="font-bold text-sm text-[#173B63] mb-3">What needs to be fixed</p>
+          <p className="font-semibold text-sm text-[#0E2A47] mb-3">What needs to be fixed</p>
           <ol className="space-y-2 text-sm text-slate-700 list-decimal pl-5">
             {report.vendor_actions.map((a, i) => <li key={i}>{a}</li>)}
           </ol>
@@ -182,7 +185,7 @@ export function VerificationReport({ report, status, showVendorMessage = false }
 
       {/* Per document */}
       <div className="space-y-3">
-        <p className="font-bold text-sm text-[#173B63]">Document-by-document results</p>
+        <p className="font-semibold text-sm text-[#0E2A47]">Document by document</p>
         {(report.documents || []).map((doc, i) => <DocumentCard key={i} doc={doc} />)}
       </div>
 
@@ -190,11 +193,11 @@ export function VerificationReport({ report, status, showVendorMessage = false }
       {showVendorMessage && report.vendor_message && (
         <div className="border border-slate-200 rounded-[12px] p-5 bg-white">
           <div className="flex items-center justify-between mb-3">
-            <p className="font-bold text-sm text-[#173B63]">Message to vendor (email-ready)</p>
+            <p className="font-bold text-sm text-[#0E2A47]">Message to vendor (email-ready)</p>
             <button
               type="button"
               onClick={copyMessage}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#2563EB] hover:underline"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0F766E] hover:underline"
             >
               <Copy className="w-3.5 h-3.5" /> {copied ? 'Copied!' : 'Copy'}
             </button>
@@ -207,7 +210,7 @@ export function VerificationReport({ report, status, showVendorMessage = false }
 
       {report.evaluated_at && (
         <p className="text-[11px] text-slate-400">
-          Verified {new Date(report.evaluated_at).toLocaleString()} · {report.engine}
+          Checked {new Date(report.evaluated_at).toLocaleString()} by {report.engine}
         </p>
       )}
     </div>

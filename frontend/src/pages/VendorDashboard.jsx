@@ -45,15 +45,15 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#173B63]">Dashboard Overview</h1>
-          <p className="text-xs text-[#64748B]">Manage your registered company entities and track live AI verification statuses.</p>
+          <h1 className="text-2xl font-bold text-[#0E2A47]">My companies</h1>
+          <p className="text-sm text-[#64748B]">Every company you register is checked automatically. Open one to see the result and what to fix.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={fetchVendorCompanies} title="Refresh Data">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Button variant="secondary" onClick={onAddCompany}>
-            <Plus className="w-4 h-4" /> Add New Company
+            <Plus className="w-4 h-4" /> Add a company
           </Button>
         </div>
       </div>
@@ -64,7 +64,7 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-5">
           <p className="text-[11px] font-bold text-[#64748B] uppercase">Total Companies</p>
-          <p className="text-3xl font-extrabold text-[#173B63] mt-2">{total}</p>
+          <p className="text-3xl font-extrabold text-[#0E2A47] mt-2">{total}</p>
         </Card>
         <Card className="p-5">
           <p className="text-[11px] font-bold text-[#64748B] uppercase">Approved</p>
@@ -83,7 +83,7 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
       {/* Action needed banner */}
       {!loading && needAction.length > 0 && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-[12px] text-sm text-[#92400E]">
-          <strong>{needAction.length} application(s) need your action.</strong> Open "View Details" to see exactly what to fix, then use "Fix &amp; Resubmit".
+          <strong>{needAction.length} application(s) need your action.</strong> Open an application to see exactly what to fix, then use "Fix &amp; resubmit".
         </div>
       )}
 
@@ -93,11 +93,9 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
           <table className="w-full text-left border-collapse text-sm">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-[#64748B] uppercase">
-                <th className="py-3 px-6">Company Name</th>
-                <th className="py-3 px-6">Vendor ID</th>
-                <th className="py-3 px-6">App ID</th>
-                <th className="py-3 px-6">Latest Update</th>
-                <th className="py-3 px-6">Reg Date</th>
+                <th className="py-3 px-6">Company</th>
+                <th className="py-3 px-6">Latest update</th>
+                <th className="py-3 px-6">Submitted</th>
                 <th className="py-3 px-6">Status</th>
                 <th className="py-3 px-6 text-right">Action</th>
               </tr>
@@ -105,24 +103,25 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-xs text-slate-500">
+                  <td colSpan="5" className="py-8 text-center text-xs text-slate-500">
                     Loading your company entities...
                   </td>
                 </tr>
               ) : companies.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="py-12 text-center text-xs text-slate-500">
-                    No vendor applications found. Click <strong>"Add New Company"</strong> to submit your first onboarding application.
+                  <td colSpan="5" className="py-12 text-center text-xs text-slate-500">
+                    No vendor applications found. Click <strong>"Add a company"</strong> to submit your first onboarding application.
                   </td>
                 </tr>
               ) : (
                 companies.map((company) => (
                   <tr key={company.vendor_id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6 font-semibold text-[#173B63]">{company.company_name}</td>
-                    <td className="py-4 px-6 text-[#64748B] font-mono text-xs">{company.vendor_id}</td>
-                    <td className="py-4 px-6 text-[#64748B] font-mono text-xs">{company.application_id}</td>
-                    <td className="py-4 px-6 text-[#64748B] text-xs max-w-xs">{company.headline || company.entity_type}</td>
-                    <td className="py-4 px-6 text-[#64748B]">
+                    <td className="py-4 px-6">
+                      <p className="font-semibold text-[#0E2A47]">{company.company_name}</p>
+                      <p className="text-[#64748B] font-mono text-[11px] whitespace-nowrap">{company.vendor_id} / {company.application_id}</p>
+                    </td>
+                    <td className="py-4 px-6 text-[#475569] text-xs max-w-sm">{company.headline || company.entity_type}</td>
+                    <td className="py-4 px-6 text-[#64748B] text-xs whitespace-nowrap">
                       {company.submitted_at ? new Date(company.submitted_at).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="py-4 px-6">
@@ -131,9 +130,9 @@ export function VendorDashboard({ onAddCompany, onViewCompany }) {
                     <td className="py-4 px-6 text-right">
                       <button 
                         onClick={() => onViewCompany(company)}
-                        className="text-[#2563EB] hover:underline font-medium inline-flex items-center gap-1 text-xs"
+                        className="text-[#0F766E] hover:underline font-medium inline-flex items-center gap-1 text-xs whitespace-nowrap"
                       >
-                        View Details <ChevronRight className="w-3.5 h-3.5" />
+                        View details <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </td>
                   </tr>
